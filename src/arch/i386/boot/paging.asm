@@ -21,13 +21,13 @@ initial_pd_real equ initial_pd - kernel_vbase
 section .data
 align 0x1000
 initial_pd:
-    PAGE(0, PAGE_DIR_SIZE | PAGE_DIR_RW | PAGE_DIR_PRESENT) ; Bottom 4MB identity mapped.
+    PAGE(0, PAGE_DIR_SIZE | PAGE_DIR_RW | PAGE_DIR_PRESENT) ; Identity map kernel
 
     %rep (kernel_page - 1)
         PAGE(0, 0)
     %endrep
 
-    PAGE(0, PAGE_DIR_SIZE | PAGE_DIR_RW | PAGE_DIR_PRESENT) ; Kernel 4MB identity mapped.
+    PAGE(0, PAGE_DIR_SIZE | PAGE_DIR_RW | PAGE_DIR_PRESENT) ; Map kernel to 0xC0000000
 
     %rep (1024 - kernel_page - 1)
         PAGE(0, 0)
