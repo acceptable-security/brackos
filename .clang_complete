@@ -1,2 +1,4 @@
 -Isrc/include
 -m32
+-ffreestanding
+-nostdlib

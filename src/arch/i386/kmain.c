@@ -1,5 +1,6 @@
 #include <multiboot.h>
 #include <drivers/vga.h>
+#include <kprint.h>
 #include <stdint.h>
 
 extern void gdt_init();
@@ -12,12 +13,13 @@ void kernel_main(unsigned long multiboot_magic, multiboot_header_t* multiboot_he
         for ( ;; ) {}
     }
 
-	/* Initialize terminal interface */
 	vga_init();
-
-	/* Newline support is left as an exercise. */
-	vga_writestring("Hello, kernel World!");
+    kprintf("vga initialized...\n");
 
     gdt_init();
+    kprintf("gdt initialized...\n");
+
+
+
     for(;;){}
 }

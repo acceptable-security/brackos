@@ -20,7 +20,7 @@ void vga_init() {
 	terminal_column = 0;
 	terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 	terminal_buffer = (short*) 0xC00B8000;
-	
+
 	for (int y = 0; y < VGA_HEIGHT; y++) {
 		for (int x = 0; x < VGA_WIDTH; x++) {
 			const int index = y * VGA_WIDTH + x;
@@ -38,11 +38,19 @@ void vga_setchar(char c, char color, int x, int y) {
 }
 
 void vga_putchar(char c) {
-	vga_setchar(c, terminal_color, terminal_column, terminal_row);
-	if (++terminal_column == VGA_WIDTH) {
+	if ( c != '\n' ) {
+		vga_setchar(c, terminal_color, terminal_column, terminal_row);
+	}
+
+	terminal_column++;
+
+	if ( terminal_column == VGA_WIDTH || c == '\n' ) {
+		terminal_row++;
 		terminal_column = 0;
-		if (++terminal_row == VGA_HEIGHT)
-			terminal_row = 0;
+
+		if ( terminal_row == VGA_HEIGHT ) {
+			// TODO - scroll
+		}
 	}
 }
 
