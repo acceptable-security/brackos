@@ -1,10 +1,11 @@
 ; set entry point to physical address
+global _loader
 global loader
 loader equ (_loader - 0xC0000000)
 
 ; Juicy variables from paging.asm
-extern initial_pd
-extern initial_pd_real
+extern initial_pd, initial_pd_real
+extern kernel_vbase
 
 ; Our C kernel entry point
 extern kernel_main
@@ -32,17 +33,17 @@ _loader:
     jmp ecx
 
 higherhalf:
-    ; Unmap the identity-mapped first 4MB of physical address space. It should not be needed
-    ; anymore.
+    ; Remove identity map for intial 4MB
     mov dword [initial_pd], 0
     invlpg [0]
 
     mov esp, stack_end
-    
+
     mov ecx, initial_pd
     push ecx ; initial paging directory
-    push ebx ;
-    push eax
+    add ebx, kernel_vbase
+    push ebx ; multiboot header
+    push eax ; multiboot magic
 
     call  kernel_main
     jmp $

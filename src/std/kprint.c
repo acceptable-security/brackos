@@ -1,5 +1,7 @@
-#include <kprint.h>
 #include <drivers/vga.h>
+
+#include <kprint.h>
+#include <math.h>
 
 // Print out a character
 void kputch(char c) {
@@ -105,8 +107,33 @@ void kprint_hex_uint(unsigned long n, bool capital, bool pad) {
     }
 }
 
+void kprint_memory(unsigned long value) {
+    unsigned long base = log2(value) / 10;
+    const char* bases = "KMGTPEZY";
+    char prefix = 0;
+
+    if ( base != 0 && base < 8 ) {
+        prefix = bases[base - 1];
+    }
+
+    if ( base > 0 ) {
+        while ( value >= 1024 ) {
+            value /= 1024;
+        }
+    }
+
+    kprintf("%d", value);
+
+    if ( prefix != 0 ) {
+        kprintf("%c", prefix);
+    }
+
+    kprintf("B");
+}
+
 // Print out a formatted string.
 // Currently WIP, and only supports basic functionality.
+// Has a custom one: %m, to print memory constants.
 void kprintf(const char* format, ...) {
     va_list args;
     char curr;
@@ -132,6 +159,12 @@ void kprintf(const char* format, ...) {
                 case 'd': {
                     const int read = va_arg(args, int);
                     kprint_int(read);
+                    break;
+                }
+
+                case 'm': {
+                    const unsigned int read = va_arg(args, unsigned int);
+                    kprint_memory(read);
                     break;
                 }
 

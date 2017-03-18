@@ -14,4 +14,4 @@ struct frame_alloc {
 void frame_dealloc(void* base, unsigned int count);
 void* frame_alloc(unsigned int count);
 
-void frame_add_chunk(void* base, unsigned int count);
+void frame_add_chunk(void* base, unsigned int size);

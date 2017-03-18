@@ -1,4 +1,4 @@
-#include <mem/paging.h>
+#include <arch/i386/paging.h>
 
 void paging_clone_table(page_table_t* source, page_table_t* target) {
     for ( int i = 0; i < 1024; i++ ) {
