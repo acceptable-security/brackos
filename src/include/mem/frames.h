@@ -2,16 +2,28 @@
 // Plan for allocator:
 // Run length encoded linked list of free frames
 
-struct frame_alloc;
-typedef struct frame_alloc frame_alloc_t;
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdint.h>
 
-struct frame_alloc {
-    void* base;          // Base physical address of the chunk
-    unsigned int count;  // Amount of page frames accessable
-    frame_alloc_t* next; // Next chunk, NULL if none.
+#define MIN_ORDER 12
+#define MAX_ORDER 22
+
+struct frame_node;
+typedef struct frame_node frame_node_t;
+
+struct frame_node {
+    uintptr_t address;
+    frame_node_t* next;
 };
 
-void frame_dealloc(void* base, unsigned int count);
-void* frame_alloc(unsigned int count);
+typedef struct {
+	uintptr_t base;
+	frame_node_t* free_lists[MAX_ORDER - MIN_ORDER];
+} frame_alloc_t;
 
-void frame_add_chunk(void* base, unsigned int size);
+void frame_init();
+void frame_add_chunk(uintptr_t address, size_t size);
+void* frame_alloc(size_t size);
+void frame_dealloc(uintptr_t address, size_t size);
+void frame_add_free_item(uintptr_t address, size_t order, bool new_item);

@@ -3,8 +3,10 @@
 
 #include <drivers/vga.h>
 
-#include <multiboot.h>
 #include <mem/frames.h>
+#include <mem/early.h>
+
+#include <multiboot.h>
 #include <kprint.h>
 #include <stdint.h>
 
@@ -24,17 +26,23 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     kprintf("gdt initialized...\n");
 
     kprintf("kernel end: %x\n", &virtual_end);
-    
+
     uintptr_t base = multiboot->mmap_addr + kernel_base;
     uintptr_t end = base + multiboot->mmap_length;
+
+    // TODO - not this
+    early_kmalloc_init(&virtual_end, 0x20000);
+    frame_init();
 
     for ( ; base < end; base += ((multiboot_memory_map_t*) base)->size + sizeof(int) ) {
         multiboot_memory_map_t* entry = (multiboot_memory_map_t*) base;
 
         if ( entry->type == MULTIBOOT_MEMORY_AVAILABLE ) {
-            frame_add_chunk((void*) entry->addr_low, entry->len_low);
+            kprintf("found memory chunk @ %x (%m)\n", entry->addr_low, entry->len_low);
+            frame_add_chunk(entry->addr_low, entry->len_low);
         }
     }
+
 
     for(;;){}
 }

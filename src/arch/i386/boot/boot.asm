@@ -37,6 +37,12 @@ higherhalf:
     mov dword [initial_pd], 0
     invlpg [0]
 
+    ; Add a recursive page directory entry.
+    mov ecx, initial_pd
+    or ecx, 3 ; read write & present
+    mov dword [initial_pd + (1023 * 4)], ecx
+    invlpg [0xFFFFF000]
+
     mov esp, stack_end
 
     mov ecx, initial_pd

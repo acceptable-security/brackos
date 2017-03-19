@@ -21,3 +21,13 @@ void* memcpy(void* dest, const void* src, unsigned long count) {
 
     return dest;
 }
+
+void* memset(void* dest, unsigned char c, unsigned int count) {
+    unsigned char* _dest = (unsigned char*) dest;
+
+    for ( int i = 0; i < count; i++ ) {
+        _dest[i] = c;
+    }
+
+    return dest;
+}

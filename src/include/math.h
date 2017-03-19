@@ -7,3 +7,6 @@ unsigned int ipow(unsigned int base, unsigned int exponent);
         #define log2(X) (63 - __builtin_clzll((X) | 1))
     #endif
 #endif
+
+#define min(a, b) ((a) > (b) ? (b) : (a))
+#define max(a, b) ((a) < (b) ? (b) : (a))

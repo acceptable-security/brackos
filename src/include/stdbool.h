@@ -1,4 +1,6 @@
-#define true 1
-#define false 0
+#if !defined(__cplusplus)
+    #define true 1
+    #define false 0
 
-typedef char bool;
+    typedef char bool;
+#endif
