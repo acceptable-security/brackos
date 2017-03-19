@@ -3,7 +3,7 @@
 
 #include <drivers/vga.h>
 
-#include <mem/frames.h>
+#include <mem/frame.h>
 #include <mem/early.h>
 
 #include <multiboot.h>
@@ -43,6 +43,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
         }
     }
 
+    frame_status();
 
     for(;;){}
 }

@@ -1,5 +1,5 @@
 #include <arch/i386/paging.h>
-#include <mem/frames.h>
+#include <mem/frame.h>
 #include <stdint.h>
 
 #define PAGE_TABLE_FLAGS(table, flags) ((page_table_t*)((uintptr_t)(table) | (flags)))
@@ -79,7 +79,7 @@ bool paging_unmap(void* virt) {
 
     // If the page table is now empty, release it.
     if ( present_count == 0 ) {
-        void* page = (void*) (((uintptr_t) page_directory_table->tables[dir_ent]) & ~0xFFF);
+        uintptr_t page = ((uintptr_t) page_directory_table->tables[dir_ent]) & ~0xFFF;
         frame_dealloc(page, 1);
         page_directory_table->tables[dir_ent] = 0;
     }

@@ -1,4 +1,4 @@
-#include <mem/frames.h>
+#include <mem/frame.h>
 #include <mem/kmalloc.h>
 
 #include <kprint.h>
@@ -155,7 +155,7 @@ void frame_add_chunk(uintptr_t address, size_t size) {
 
 // Initialize a buddy allocator
 void frame_init() {
-	// Take the first chunk of space for the header
+	// Allocate a header.
 	buddy_alloc = (frame_alloc_t*) kmalloc(sizeof(frame_alloc_t));
 
 	// Setup the header
