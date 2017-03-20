@@ -39,6 +39,12 @@ bool paging_map(void* physical, void* virt, unsigned short flags) {
         page_directory_table->tables[dir_ent] = new_table;
     }
 
+    if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_SIZE) ) {
+        // remapping an already mapped page
+        // TODO - panic?
+        return false;
+    }
+
     // Don't remap the same page
     if ( PAGE_TABLE_TEST(table->entries[tab_ent].flags, PAGE_PRESENT) ) {
         // TODO - panic?
@@ -56,8 +62,9 @@ bool paging_unmap(void* virt) {
     uintptr_t tab_ent = ((uintptr_t) virt) >> 12 & 0x03FF;
 
     if ( !PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
+        // attempting to unmap a nonexistant page table
         // TODO - panic?
-        return true;
+        return false;
     }
 
     page_table_t* table = page_table_base + (dir_ent * sizeof(page_table_t));
@@ -80,7 +87,7 @@ bool paging_unmap(void* virt) {
     // If the page table is now empty, release it.
     if ( present_count == 0 ) {
         uintptr_t page = ((uintptr_t) page_directory_table->tables[dir_ent]) & ~0xFFF;
-        frame_dealloc(page, 1);
+        frame_dealloc((void*) page, 1);
         page_directory_table->tables[dir_ent] = 0;
     }
 

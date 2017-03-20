@@ -44,6 +44,6 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     void* frame = frame_alloc(1);
     kprintf("got %p\n", frame);
     frame_dealloc(frame, 1);
-    frame_status();
+    
     for( ;; ) {}
 }

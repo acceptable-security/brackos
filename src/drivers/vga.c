@@ -50,6 +50,7 @@ void vga_putchar(char c) {
 
 		if ( terminal_row == VGA_HEIGHT ) {
 			// TODO - scroll
+			terminal_row = 0;
 		}
 	}
 }
