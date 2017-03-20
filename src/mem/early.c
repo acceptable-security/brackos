@@ -12,11 +12,14 @@ void* early_kmalloc(unsigned long size) {
         return (void*) 0;
     }
 
-    if ( early_memory_base + size <= early_memory_end ) {
-        void* tmp = (void*) early_memory_base;
-        early_memory_base += size;
-        return tmp;
+    if ( early_memory_base + size > early_memory_end ) {
+        kprintf("out of kern mem");
+        for (;;) {}
     }
+
+    void* tmp = (void*) early_memory_base;
+    early_memory_base += size;
+    return tmp;
 
     return (void*) 0;
 }

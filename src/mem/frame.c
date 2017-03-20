@@ -14,13 +14,18 @@ bool frame_buddy_check(uintptr_t a, uintptr_t b, size_t size) {
 	uintptr_t upper = max(a, b) - buddy_alloc->base;
 
 	// Calculate upper from lower and check.
-	return (lower ^ size) == upper;
+	return (lower + size) == upper;
 }
 
-// Add a free chunk into a certain order
-void frame_add_free_item(uintptr_t address, size_t order, bool new_item) {
-	frame_node_t* head = buddy_alloc->free_lists[order - MIN_ORDER];
-	size_t size = 1 << order;
+// Add a free chunk into a certain free list
+void frame_add_free_item(uintptr_t address, size_t count, bool new_item) {
+	if ( count > MAX_FRAMES ) {
+		kprintf("%d > %d\n", count, MAX_FRAMES);
+		return;
+	}
+
+
+	frame_node_t* head = buddy_alloc->free_lists[count - 1];
 
 	if ( !new_item && head != 0) {
 		// Old address with a nonempty list, lets find some buddies!
@@ -29,18 +34,18 @@ void frame_add_free_item(uintptr_t address, size_t order, bool new_item) {
 		// Kind of ugly but w\e
 		while ( true ) {
 			// Check for buddies
-			if ( frame_buddy_check(head->address, address, size) ) {
+			if ( count < MAX_FRAMES && frame_buddy_check(head->address, address, count * PAGE_SIZE) ) {
 				// We found buddies
-
+				// Remove this item from it's old list
 				if ( prev != 0 ) {
-					// Remove this item from it's old list
 					prev->next = head->next;
 				}
 				else {
-					buddy_alloc->free_lists[order - MIN_ORDER] = head;
+					buddy_alloc->free_lists[count - 1] = head->next;
 				}
 
-				frame_add_free_item(min(head->address, address), order + 1, false);
+				kfree(head);
+				frame_add_free_item(min(head->address, address), count + 1, false);
 				return;
 			}
 
@@ -48,10 +53,11 @@ void frame_add_free_item(uintptr_t address, size_t order, bool new_item) {
 				// We reached the end of the list, add it here.
                 frame_node_t* next = kmalloc(sizeof(frame_node_t));
 
-                next->address = address;
+				next->address = address;
                 next->next = 0;
+
                 head->next = next;
-				break;
+				return;
 			}
 
 			prev = head;
@@ -64,41 +70,31 @@ void frame_add_free_item(uintptr_t address, size_t order, bool new_item) {
 
         next->address = address;
         next->next = head;
-		buddy_alloc->free_lists[order - MIN_ORDER] = next;
+		buddy_alloc->free_lists[count - 1] = next;
 	}
 }
 
 // Allocate a chunk from a buddy allocator
-void* frame_alloc(size_t size) {
-	// Round up by getting highest order and calculating the size form that
-	int original_order = (32 - __builtin_clz(size - 1));
-
-	// Not enough size for this request;
-	if ( original_order >= MAX_ORDER ) {
+void* frame_alloc(size_t want_count) {
+	// Not enough frames for this request;
+	if ( want_count < 1 && want_count >= MAX_FRAMES ) {
 		return NULL;
 	}
 
-	size_t want_size = 1 << original_order;
-
-	// Find the smallest order with space
-	for ( int order = original_order; order < MAX_ORDER; order++ ) {
-		if ( buddy_alloc->free_lists[order - MIN_ORDER] != 0 ) {
+	// Find the smallest frame count with space
+	for ( int count = want_count; count <= MAX_FRAMES; count++ ) {
+		if ( buddy_alloc->free_lists[count - 1] != NULL ) {
 			// Pop the head
-            frame_node_t* next = buddy_alloc->free_lists[order - MIN_ORDER];
+            frame_node_t* next = buddy_alloc->free_lists[count - 1];
 			uintptr_t address = next->address;
-			buddy_alloc->free_lists[order - MIN_ORDER] = next->next;
+			buddy_alloc->free_lists[count - 1] = next->next;
 
 			// Try to return it's buddies
-			size_t found_size = 1 << order;
-
-			if ( found_size != want_size ) {
-				// Keep halving the found size, returning the second parts of the halves into
-				// the free list as we go, until we find the right size.
-
-				while ( found_size > want_size ) {
-					found_size = found_size >> 1;
-					frame_add_free_item(address + found_size, 32 - __builtin_clz(found_size - 1), true);
-				}
+			// Keep halving the found size, returning the second parts of the halves into
+			// the free list as we go, until we find the right size.
+			while ( count > want_count ) {
+				count--;
+				frame_add_free_item(address + (count * PAGE_SIZE), count, true);
 			}
 
 			return (void*) address;
@@ -109,29 +105,33 @@ void* frame_alloc(size_t size) {
 	return NULL;
 }
 
-// Return a chunk of memory ack into the buddy allocator
-void frame_dealloc(uintptr_t address, size_t size) {
-	int order = 32 - __builtin_clz(size - 1);
-	frame_add_free_item(address, order, false);
+// Return a chunk of memory back into the buddy allocator
+//   address - starting address of the allocation
+//   count   - amount of frames to return
+void frame_dealloc(void* address, size_t count) {
+	frame_add_free_item((uintptr_t) address, count, false);
 }
 
 // Prints out the current status of the allocator
 void frame_status() {
-	for ( int order = MIN_ORDER; order < MAX_ORDER; order++ ) {
-		kprintf("Order %d\n", order);
+	for ( int count = 0; count < MAX_FRAMES; count++ ) {
 
-		frame_node_t* head = buddy_alloc->free_lists[order - MIN_ORDER];
+		frame_node_t* head = buddy_alloc->free_lists[count];
 
-		while ( head != 0 ) {
-			kprintf("| %p\n", head->address);
-			head = head->next;
+		if ( head != 0 ) {
+			kprintf("Count %d\n", count + 1);
+
+			while ( head != 0 ) {
+				kprintf("| %p\n", head->address);
+				head = head->next;
+			}
 		}
 	}
 }
 
 void frame_add_chunk(uintptr_t address, size_t size) {
-	// If we don't have enough space for the smallest chunk of space, ignore.
-	if ( size <= (1 << MIN_ORDER) ) {
+	// If we don't have enough space for a single frame, ignore.
+	if ( size <= PAGE_SIZE ) {
 		return;
 	}
 
@@ -139,14 +139,16 @@ void frame_add_chunk(uintptr_t address, size_t size) {
 	buddy_alloc->base = address;
 
 	// Carve out as many chunks of space as possible.
-	while ( size > (1 << MIN_ORDER) ) {
-		for ( int order = MAX_ORDER - 1; order >= MIN_ORDER; order-- ) {
-			// Find the largest order to cut out of the size.
-			if ( size >= (1 << order) ) {
-				frame_add_free_item(address, order, true);
+	while ( size >= PAGE_SIZE ) {
+		for ( int count = MAX_FRAMES; count >= 1; count-- ) {
+			size_t byte_count = count * PAGE_SIZE;
 
-				address += 1 << order;
-				size -= 1 << order;
+			// Find the largest frame count to cut out of the size.
+			if ( size >= byte_count ) {
+				frame_add_free_item(address, count, true);
+
+				address += byte_count;
+				size -= byte_count;
 				break;
 			}
 		}
