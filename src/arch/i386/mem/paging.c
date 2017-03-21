@@ -1,4 +1,5 @@
 #include <arch/i386/paging.h>
+#include <kprint.h>
 #include <mem/frame.h>
 #include <stdint.h>
 
@@ -39,20 +40,24 @@ bool paging_map(void* physical, void* virt, unsigned short flags) {
         page_directory_table->tables[dir_ent] = new_table;
     }
 
-    if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_SIZE) ) {
+    if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PAE) ) {
         // remapping an already mapped page
         // TODO - panic?
+        kprintf("this page is already mapped in a PAE page");
         return false;
     }
 
-    // Don't remap the same page
     if ( PAGE_TABLE_TEST(table->entries[tab_ent].flags, PAGE_PRESENT) ) {
+        // Don't remap the same page
         // TODO - panic?
+        kprintf("this page is already mapped");
         return false;
     }
 
     uintptr_t ent = ((uintptr_t) physical & ~0xFFF) | flags;
     table->entries[tab_ent] = *(page_entry_t*)&ent;
+
+    kprintf("mapped %d:%d to %p\n", dir_ent, tab_ent, ent);
 
     return true;
 }

@@ -1,5 +1,6 @@
 #include <arch/i386/gdt.h>
 #include <arch/i386/map.h>
+#include <arch/i386/paging.h>
 
 #include <drivers/vga.h>
 
@@ -20,7 +21,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
         for ( ;; ) {}
     }
 
-	vga_init();
+    vga_init();
     gdt_init();
 
     uintptr_t base = multiboot->mmap_addr + kernel_base;
@@ -43,7 +44,11 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
 
     void* frame = frame_alloc(1);
     kprintf("got %p\n", frame);
-    frame_dealloc(frame, 1);
-    
+
+    paging_map(frame, (void*) 12, PAGE_PRESENT | PAGE_RW);
+
+    // int test = 12;
+    // *(int*) test = 1;
+
     for( ;; ) {}
 }

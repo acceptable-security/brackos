@@ -7,7 +7,7 @@
 #define PAGE_CACHE    1 << 4
 #define PAGE_ACCESSED 1 << 5
 #define PAGE_RESERVED 1 << 6
-#define PAGE_SIZE     1 << 7
+#define PAGE_PAE      1 << 7
 #define PAGE_GLOBAL   1 << 8
 
 typedef struct {
