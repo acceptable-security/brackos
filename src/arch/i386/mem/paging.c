@@ -69,6 +69,7 @@ bool paging_unmap(void* virt) {
     if ( !PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
         // attempting to unmap a nonexistant page table
         // TODO - panic?
+        kprintf("attempted to unmap from a nonexistant page table.");
         return false;
     }
 
@@ -91,10 +92,12 @@ bool paging_unmap(void* virt) {
 
     // If the page table is now empty, release it.
     if ( present_count == 0 ) {
+        kprintf("page table empty, releasing...\n");
         uintptr_t page = ((uintptr_t) page_directory_table->tables[dir_ent]) & ~0xFFF;
         frame_dealloc((void*) page, 1);
         page_directory_table->tables[dir_ent] = 0;
     }
+
 
     return false;
 }

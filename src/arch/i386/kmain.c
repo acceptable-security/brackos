@@ -42,13 +42,5 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     }
 
 
-    void* frame = frame_alloc(1);
-    kprintf("got %p\n", frame);
-
-    paging_map(frame, (void*) 12, PAGE_PRESENT | PAGE_RW);
-
-    // int test = 12;
-    // *(int*) test = 1;
-
     for( ;; ) {}
 }
