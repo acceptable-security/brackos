@@ -41,6 +41,9 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
         }
     }
 
-
-    for( ;; ) {}
+    paging_print();
+    paging_map(frame_alloc(1), (void*) 1, PAGE_PRESENT | PAGE_RW);
+    paging_print();
+    paging_unmap((void*) 1);
+    paging_print();
 }

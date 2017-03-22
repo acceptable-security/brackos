@@ -7,7 +7,7 @@
 #define PAGE_CACHE    1 << 4
 #define PAGE_ACCESSED 1 << 5
 #define PAGE_RESERVED 1 << 6
-#define PAGE_PAE      1 << 7
+#define PAGE_PSE      1 << 7
 #define PAGE_GLOBAL   1 << 8
 
 typedef struct {
@@ -31,3 +31,4 @@ void paging_clone_table(page_table_t* source, page_table_t* target);
 void paging_clone_directory(page_directory_t* source, page_directory_t* target);
 
 void paging_init(page_directory_t* initial_pd);
+void paging_print();

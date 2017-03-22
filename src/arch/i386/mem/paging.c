@@ -23,8 +23,74 @@ page_table_t* page_table_base = (page_table_t*) 0xFFC00000;
 //     }
 // }
 
-void paging_print(page_directory_t* current_pd) {
+void paging_print_page(uintptr_t dir) {
+    if ( dir & PAGE_PRESENT ) {
+        kprintf("pres ");
+    }
+    if ( dir & PAGE_RW ) {
+        kprintf("rw ");
+    }
+    if ( dir & PAGE_USER ) {
+        kprintf("user ");
+    }
+    if ( dir & PAGE_WT ) {
+        kprintf("writethrough ");
+    }
+    if ( dir & PAGE_CACHE ) {
+        kprintf("cached ");
+    }
+    if ( dir & PAGE_ACCESSED ) {
+        kprintf("accessed ");
+    }
+    if ( dir & PAGE_PSE ) {
+        kprintf("pse ");
+    }
+    if ( dir & PAGE_GLOBAL ) {
+        kprintf("global ");
+    }
+}
 
+void paging_print() {
+    kprintf("\n== page mapping ==\n");
+    // Don't print the recursive page :P
+    for ( int dir_ent = 0; dir_ent < 1023; dir_ent++ ) {
+        uintptr_t dir = (uintptr_t) page_directory_table->tables[dir_ent];
+        uint32_t size = 0x1000;
+        uintptr_t address = dir & ~0xFFF;
+
+        if ( dir == 0 ) {
+            continue;
+        }
+
+        kprintf("page dir %d: ", dir_ent);
+        paging_print_page(dir);
+
+        if ( dir & PAGE_PSE ) {
+            size = 0x100000;
+            kprintf("range: [0x%p, 0x%p]", address, address + size);
+            kprintf("\n");
+        }
+        else if ( !(dir & PAGE_PSE) ) {
+            kprintf("\n");
+
+            for ( int tab_ent = 0; tab_ent < 1024; tab_ent++ ) {
+                page_table_t* table = page_table_base + (dir_ent * sizeof(page_table_t));
+                uintptr_t addr = *(uintptr_t*)&table->entries[tab_ent];
+
+                if ( addr == 0 || !(addr & PAGE_PRESENT) ) {
+                    continue;
+                }
+
+                kprintf("  page table %d: ", tab_ent);
+                paging_print_page(addr);
+                addr = addr & ~0xFFF;
+                kprintf("range: [0x%p, 0x%p]\n", addr, addr + size);
+            }
+        }
+    }
+
+    kprintf("page dir 1023 recursive directory\n");
+    kprintf("== page mapping ==\n\n");
 }
 
 bool paging_map(void* physical, void* virt, unsigned short flags) {
@@ -40,10 +106,10 @@ bool paging_map(void* physical, void* virt, unsigned short flags) {
         page_directory_table->tables[dir_ent] = new_table;
     }
 
-    if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PAE) ) {
+    if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PSE) ) {
         // remapping an already mapped page
         // TODO - panic?
-        kprintf("this page is already mapped in a PAE page");
+        kprintf("this page is already mapped in a PSE page");
         return false;
     }
 
