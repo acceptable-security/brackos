@@ -24,22 +24,10 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     vga_init();
     gdt_init();
 
-    uintptr_t base = multiboot->mmap_addr + kernel_base;
-    uintptr_t end = base + multiboot->mmap_length;
-
     // TODO - not this
     early_kmalloc_init((void*) kernel_heap_start, kernel_heap_size);
     frame_init();
-
-    for ( ; base < end; base += ((multiboot_memory_map_t*) base)->size + sizeof(int) ) {
-        multiboot_memory_map_t* entry = (multiboot_memory_map_t*) base;
-
-        if ( entry->type == MULTIBOOT_MEMORY_AVAILABLE && entry->addr_low != 0 ) {
-            kprintf("found memory chunk @ %x (%m)\n", entry->addr_low, entry->len_low);
-            frame_add_chunk(entry->addr_low, entry->len_low);
-            break;
-        }
-    }
+    memmap_to_frames(multiboot);
 
     paging_print();
     paging_map(frame_alloc(1), (void*) 1, PAGE_PRESENT | PAGE_RW);

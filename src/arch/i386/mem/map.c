@@ -1,5 +1,6 @@
 #include <arch/i386/map.h>
 #include <multiboot.h>
+#include <mem/frame.h>
 #include <stdint.h>
 #include <kprint.h>
 
@@ -22,4 +23,22 @@ void print_mem_map(void* _multiboot) {
                                   MEM_TYPE(entry->type),
                                   entry->len_low);
     }
+}
+
+void memmap_to_frames(void* _multiboot) {
+    multiboot_info_t* multiboot = _multiboot;
+    
+    uintptr_t base = multiboot->mmap_addr + kernel_base;
+    uintptr_t end = base + multiboot->mmap_length;
+
+    for ( ; base < end; base += ((multiboot_memory_map_t*) base)->size + sizeof(int) ) {
+        multiboot_memory_map_t* entry = (multiboot_memory_map_t*) base;
+
+        if ( entry->type == MULTIBOOT_MEMORY_AVAILABLE && entry->addr_low != 0 ) {
+            kprintf("found memory chunk @ %x (%m)\n", entry->addr_low, entry->len_low);
+            frame_add_chunk(entry->addr_low, entry->len_low);
+            break;
+        }
+    }
+
 }
