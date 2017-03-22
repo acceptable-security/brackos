@@ -14,7 +14,7 @@
 extern uintptr_t virtual_end;
 unsigned long kernel_base = 0xC0000000;
 
-void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, unsigned long initial_pd) {
+void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, unsigned long initial_pd, unsigned long kernel_heap_start, unsigned long kernel_heap_size) {
     // for (;;){}
     if ( multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
         // TODO - have an actual panic
@@ -28,7 +28,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     uintptr_t end = base + multiboot->mmap_length;
 
     // TODO - not this
-    early_kmalloc_init(&virtual_end, 0x10000);
+    early_kmalloc_init((void*) kernel_heap_start, kernel_heap_size);
     frame_init();
 
     for ( ; base < end; base += ((multiboot_memory_map_t*) base)->size + sizeof(int) ) {

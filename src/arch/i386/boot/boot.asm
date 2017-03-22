@@ -7,6 +7,9 @@ loader equ (_loader - 0xC0000000)
 extern initial_pd, initial_pd_real
 extern kernel_vbase
 
+; Helpful information for the stack/heap
+extern stack_end, kernel_heap, kernel_heap_size
+
 ; Our C kernel entry point
 extern kernel_main
 
@@ -45,6 +48,10 @@ higherhalf:
 
     mov esp, stack_end
 
+    mov ecx, kernel_heap_size
+    push ecx ; kernel heap size
+    mov ecx, kernel_heap
+    push ecx ; kernel heap address
     mov ecx, initial_pd
     push ecx ; initial paging directory
     add ebx, kernel_vbase
@@ -53,12 +60,3 @@ higherhalf:
 
     call  kernel_main
     jmp $
-
-; Stack definitons
-stack_size equ 0x4000
-stack_end  equ stack_size + stack
-
-section .bss
-align 32
-stack:
-    resb stack_size
