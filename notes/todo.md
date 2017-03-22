@@ -1,0 +1,30 @@
+- Memory
+    - [x] gdt
+    - [x] early kmalloc
+    - [x] Page frame allocator
+    - [x] Virtual memory mapper
+    - [ ] Virtual address allocator
+    - [ ] late kmalloc
+    - [ ] Page compression
+    - [ ] Copy on Write
+    - [ ] Swapping
+    - [ ] page directory cloning and swapping
+- Interrupts
+    - [ ] RSDP parser
+    - [ ] ACPI parser
+    - [ ] FADT parser
+    - [ ] APIC handler
+    - [ ] IDT
+    - [ ] syscalls
+- virtual file system
+    - [ ] ???
+- user space
+    - [ ] scheduler
+    - [ ] context switcher
+    - [ ] initial process
+    - [ ] port of gcc
+- devices
+    - [ ] vesa
+    - [ ] keyboard
+    - [ ] mouse
+    - [ ] tty
