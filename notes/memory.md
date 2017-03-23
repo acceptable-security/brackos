@@ -20,12 +20,9 @@ possible. Trying to get as many round number as possible :).
     0x00000000          | NULL memory
     0x00001000          | user space start
     --------------------+------------------------------------------------------------------------------------
-    0xC0000000          | Higher Half
-    0xC00B8000          | VGA Memory
+    0xC0000000          | Higher Half starts here. BIOS memory mapped here.
     0xC0100000          | Start of kernel memory (multiboot, text, rodata, data, bss)
-    0xC0100000 + end    | End of preallocated kernel memory, and start of early kernel heap.
-    end of kernel heap  | End of kernel heap, rest divided up into pages and used for later kernel heap
-    0xD0000000          | End of kernel heal (255MiB). Start of page directory
-    0xD0001000          | End of page directory. Start of page tables
-    0xD0040000          | End of page tables. Rest is TODO
+    0xC0100000 + end    | End of preallocated kernel memory, and start of kernel heap.
+    0xFFC00000          | End of kernel heap (256MiB). Start of page tables from recursive page directory
+    0xFFFFF000          | End of page tables and start of recursive page directory.
     --------------------+------------------------------------------------------------------------------------
