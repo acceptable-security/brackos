@@ -53,19 +53,42 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
         uintptr_t virt_start = ((uintptr_t) start) & ~0xFFF;
         uintptr_t virt_end = ((uintptr_t) start + length) & ~0xFFF;
         unsigned long page_cnt = (virt_end - virt_start) / PAGE_SIZE;
+        unsigned long paging_flags = flags; // TODO - actual flags parsing
 
-        void* pages = frame_alloc(page_cnt);
+        if ( flags & MMAP_CONTINOUS ) {
+            void* pages = frame_alloc(page_cnt);
 
-        if ( pages == NULL ) {
-            return NULL;
-        }
-
-        for ( int i = 0; i < page_cnt; i++ ) {
-            if ( !paging_map(pages, (void*) virt_start + (page_cnt * PAGE_SIZE), PAGE_PRESENT | PAGE_RW) ) {
-                frame_dealloc(pages, page_cnt);
+            if ( pages == NULL ) {
                 return NULL;
             }
+
+            for ( int i = 0; i < page_cnt; i++ ) {
+                if ( !paging_map(pages, (void*) virt_start + (page_cnt * PAGE_SIZE), paging_flags) ) {
+                    frame_dealloc(pages, page_cnt);
+                    // TODO - clean up the page dir/table.
+                    return NULL;
+                }
+            }
         }
+        else {
+            for ( int i = 0; i < page_cnt; i++ ) {
+                void* page = frame_alloc(1);
+
+                if ( page == NULL ) {
+                    frame_dealloc(page, 1);
+                    // TODO - dealloc frames before and fix page dir/table
+                    return NULL;
+                }
+
+                if ( !paging_map(page, (void*) virt_start + (page_cnt * PAGE_SIZE), paging_flags) ) {
+                    frame_dealloc(page, 1);
+                    // TODO - dealloc frames before and fix page dir/table
+                    return NULL;
+                }
+            }
+        }
+
+        return (void*) virt_start;
     }
     else {
 
