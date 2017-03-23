@@ -2,7 +2,8 @@ typedef enum {
     MEM_USABLE,
     MEM_MMIO,
     MEM_PCI,
-    MEM_BIOS
+    MEM_BIOS,
+    _MEM_CAP // end position to use for arrays
 } vasa_memtype_t;
 
 struct vasa_node;
@@ -16,9 +17,12 @@ struct vasa_node {
     unsigned long length;
 };
 
+// Each memory type has a linked list of free and used address spaces,
+// which are used for allocating and recycling continous pieces of
+// address space which can be used by those respective types.
 typedef struct {
-    vasa_node_t* free_head; // head of the free list
-    vasa_node_t* used_head; // head of the used list.
+    vasa_node_t* free_head[_MEM_CAP - 1]; // head of the free lists
+    vasa_node_t* used_head[_MEM_CAP - 1]; // head of the used lists
 } vasa_t;
 
 void vasa_dealloc(void* ptr);
