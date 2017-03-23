@@ -11,7 +11,6 @@ typedef struct vasa_node vasa_node_t;
 
 struct vasa_node {
     vasa_node_t* next;
-    vasa_memtype_t type;
 
     void* base;
     unsigned long length;
