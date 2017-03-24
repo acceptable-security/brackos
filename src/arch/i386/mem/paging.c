@@ -74,7 +74,7 @@ void paging_print() {
             kprintf("\n");
 
             for ( int tab_ent = 0; tab_ent < 1024; tab_ent++ ) {
-                page_table_t* table = page_table_base + (dir_ent * sizeof(page_table_t));
+                page_table_t* table = (page_table_t*) (((uintptr_t) page_table_base) + (dir_ent * sizeof(page_table_t)));
                 uintptr_t addr = *(uintptr_t*)&table->entries[tab_ent];
 
                 if ( addr == 0 || !(addr & PAGE_PRESENT) ) {
@@ -93,11 +93,11 @@ void paging_print() {
     kprintf("== page mapping ==\n\n");
 }
 
-bool paging_map(void* physical, void* virt, unsigned short flags) {
-    uintptr_t dir_ent = ((uintptr_t) virt) >> 22;
-    uintptr_t tab_ent = ((uintptr_t) virt) >> 12 & 0x03FF;
+bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
+    uintptr_t dir_ent = virt >> 22;
+    uintptr_t tab_ent = virt >> 12 & 0x03FF;
 
-    page_table_t* table = page_table_base + (dir_ent * sizeof(page_table_t));
+    page_table_t* table = page_table_base + dir_ent;
 
     if ( !PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
         // Allocate a new table and insert it to the proper location with the proper flags.
@@ -109,18 +109,18 @@ bool paging_map(void* physical, void* virt, unsigned short flags) {
     if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PSE) ) {
         // remapping an already mapped page
         // TODO - panic?
-        kprintf("this page is already mapped in a PSE page");
+        kprintf("this page is already mapped in a PSE page\n");
         return false;
     }
 
     if ( PAGE_TABLE_TEST(table->entries[tab_ent].flags, PAGE_PRESENT) ) {
         // Don't remap the same page
         // TODO - panic?
-        kprintf("this page is already mapped");
+        kprintf("this page is already mapped\n");
         return false;
     }
 
-    uintptr_t ent = ((uintptr_t) physical & ~0xFFF) | flags;
+    uintptr_t ent = (physical & ~0xFFF) | flags;
     table->entries[tab_ent] = *(page_entry_t*)&ent;
 
     kprintf("mapped %d:%d to %p\n", dir_ent, tab_ent, ent);
@@ -128,18 +128,18 @@ bool paging_map(void* physical, void* virt, unsigned short flags) {
     return true;
 }
 
-bool paging_unmap(void* virt) {
-    uintptr_t dir_ent = ((uintptr_t) virt) >> 22;
-    uintptr_t tab_ent = ((uintptr_t) virt) >> 12 & 0x03FF;
+bool paging_unmap(uintptr_t virt) {
+    uintptr_t dir_ent = virt >> 22;
+    uintptr_t tab_ent = virt >> 12 & 0x03FF;
 
     if ( !PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
         // attempting to unmap a nonexistant page table
         // TODO - panic?
-        kprintf("attempted to unmap from a nonexistant page table.");
+        kprintf("attempted to unmap from a nonexistant page table.\n");
         return false;
     }
 
-    page_table_t* table = page_table_base + (dir_ent * sizeof(page_table_t));
+    page_table_t* table = page_table_base + dir_ent;
 
     table->entries[tab_ent].address = 0;
 

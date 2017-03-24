@@ -57,7 +57,9 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
     unsigned long page_cnt = (virt_end - virt_start) / PAGE_SIZE;
 
     // Flags to be passed to the pager
-    unsigned long paging_flags = flags; // TODO - actual flags parsing
+    unsigned long paging_flags = PAGE_RW | PAGE_PRESENT;//flags; // TODO - actual flags parsing
+
+    kprintf("setting %p for %d pages\n", virt_start, page_cnt);
 
     if ( flags & MMAP_URGENT ) {
         if ( flags & MMAP_CONTINOUS ) {
@@ -82,16 +84,20 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
                 void* page = frame_alloc(1);
 
                 if ( page == NULL ) {
+                    kprintf("failed to allocate 1 page\n");
                     frame_dealloc(page, 1);
                     // TODO - dealloc frames before and fix page dir/table
                     return NULL;
                 }
 
-                if ( !paging_map(page, (void*) virt_start + (page_cnt * PAGE_SIZE), paging_flags) ) {
+                if ( !paging_map(page, virt_start + (i * PAGE_SIZE), paging_flags) ) {
+                    kprintf("failed to map %p to %p\n", page, (void*) virt_start + (page_cnt * PAGE_SIZE));
+                    for ( ;; ) {}
                     frame_dealloc(page, 1);
                     // TODO - dealloc frames before and fix page dir/table
                     return NULL;
                 }
+
             }
         }
 

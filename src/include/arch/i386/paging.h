@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 
 #define PAGE_PRESENT  1 << 0
 #define PAGE_RW       1 << 1
@@ -24,8 +25,8 @@ typedef struct {
     page_table_t* tables[1024];
 } __attribute__((packed)) page_directory_t;
 
-bool paging_unmap(void* virt);
-bool paging_map(void* physical, void* virt, unsigned short flags);
+bool paging_unmap(uintptr_t virt);
+bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags);
 
 void paging_clone_table(page_table_t* source, page_table_t* target);
 void paging_clone_directory(page_directory_t* source, page_directory_t* target);
