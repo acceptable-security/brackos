@@ -1,3 +1,4 @@
 isodir/
 build/
 .DS_Store
+kernel.bin
