@@ -62,8 +62,8 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
     kprintf("setting %p for %d pages\n", virt_start, page_cnt);
 
     if ( flags & MMAP_URGENT ) {
-        if ( flags & MMAP_CONTINOUS ) {
-            // Immediately allocate page_cnt continous pages
+        if ( flags & MMAP_CONTINUOUS ) {
+            // Immediately allocate page_cnt continuous pages
             void* pages = frame_alloc(page_cnt);
 
             if ( pages == NULL ) {
@@ -79,7 +79,7 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
             }
         }
         else {
-            // Immediately allocate page_cnt pages (by allocating 1 at a time, it won't necessarily be continous)
+            // Immediately allocate page_cnt pages (by allocating 1 at a time, it won't necessarily be continuous)
             for ( int i = 0; i < page_cnt; i++ ) {
                 void* page = frame_alloc(1);
 

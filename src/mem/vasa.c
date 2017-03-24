@@ -61,7 +61,7 @@ void vasa_add_node(vasa_node_t* node, bool used) {
     }
 }
 
-// Take the free or used lists and merge the chunks of memory if they're continous
+// Take the free or used lists and merge the chunks of memory if they're continuous
 void vasa_merge(bool used) {
     vasa_node_t* head;
 
@@ -73,7 +73,7 @@ void vasa_merge(bool used) {
     }
 
     while ( head != NULL && head->next != NULL ) {
-        // Is the node continous?
+        // Is the node continuous?
         if ( head->base + head->length == head->next->base ) {
             // Merge the nodes and correct the linked list.
             vasa_node_t* mergeable = head->next;
