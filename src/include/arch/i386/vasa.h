@@ -1,5 +1,5 @@
 typedef enum {
-    MEM_USABLE,
+    MEM_RAM,
     MEM_MMIO,
     MEM_PCI
 } vasa_memtype_t;

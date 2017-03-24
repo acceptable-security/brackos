@@ -10,9 +10,14 @@ vasa_t global_asa;
 
 // Add a node to the linked lists.
 void vasa_add_node(vasa_node_t* node, bool used) {
+    if ( node == NULL ) {
+        // TODO - no node
+        return;
+    }
+
     vasa_node_t* head = used ? global_asa.used_head : global_asa.free_head;
 
-    while ( head != NULL ) {
+    while ( head ) {
         if ( (uintptr_t) node->base > (uintptr_t) head->base ) {
             node->next = head->next;
             head->next = node;
@@ -23,7 +28,7 @@ void vasa_add_node(vasa_node_t* node, bool used) {
         head = head->next;
     }
 
-    if ( head ) {
+    if ( head == NULL ) {
         if ( used ) {
             global_asa.used_head = node;
         }
@@ -36,6 +41,7 @@ void vasa_add_node(vasa_node_t* node, bool used) {
     }
 }
 
+// Allocate virtual address space for a given memory type
 void* vasa_alloc(vasa_memtype_t type, unsigned long size) {
     vasa_node_t* prev = NULL;
     vasa_node_t* head = global_asa.free_head;

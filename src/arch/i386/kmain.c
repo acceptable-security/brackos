@@ -1,6 +1,7 @@
 #include <arch/i386/gdt.h>
 #include <arch/i386/map.h>
 #include <arch/i386/paging.h>
+#include <arch/i386/vasa.h>
 
 #include <drivers/vga.h>
 
@@ -28,10 +29,14 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     early_kmalloc_init((void*) kernel_heap_start, kernel_heap_size);
     frame_init();
     memmap_to_frames(multiboot);
+    vasa_init(&virtual_end);
 
-    paging_print();
-    paging_map(frame_alloc(1), (void*) 1, PAGE_PRESENT | PAGE_RW);
-    paging_print();
-    paging_unmap((void*) 1);
-    paging_print();
+    void* test = vasa_alloc(MEM_RAM, 1);
+    kprintf("got %p\n", test);
+    
+    // paging_print();
+    // paging_map(frame_alloc(1), (void*) 1, PAGE_PRESENT | PAGE_RW);
+    // paging_print();
+    // paging_unmap((void*) 1);
+    // paging_print();
 }
