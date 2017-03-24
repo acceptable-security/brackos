@@ -88,6 +88,39 @@ void vasa_merge(bool used) {
     }
 }
 
+// Deallocate a virtual address space ptr.
+void vasa_dealloc(void* ptr) {
+    vasa_node_t* prev = NULL;
+    vasa_node_t* head = global_asa.used_head;
+
+    uintptr_t iptr = (uintptr_t) ptr;
+
+    while ( head != NULL ) {
+        // Find the block of space we fall into in the used list.
+        uintptr_t start = (uintptr_t) head->base;
+        uintptr_t end = start + head->length;
+
+        if ( iptr >= start && iptr <= end ) {
+            // Found our free block :D. Add it to the free list C:
+            if ( prev ) {
+                prev->next = head->next;
+
+            }
+            else {
+                global_asa.used_head = head->next;
+            }
+
+            vasa_add_node(head, false);
+            return;
+        }
+
+        prev = head;
+        head = head->next;
+    }
+
+    // Didn't find the pointer in the freelist, ignore it.
+    // TODO - PANIC?
+}
 
 // Allocate virtual address space for a given memory type
 void* vasa_alloc(vasa_memtype_t type, unsigned long size) {
