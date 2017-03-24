@@ -27,4 +27,4 @@ void vasa_merge(bool used);
 void vasa_dealloc(void* ptr);
 void* vasa_alloc(vasa_memtype_t type, unsigned long size);
 void vasa_print_state();
-void vasa_init();
+void vasa_init(void* start, unsigned long length);

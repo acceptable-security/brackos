@@ -1,12 +1,11 @@
 // Virtual Address Space Allocator.
 
-#include <arch/i386/vasa.h>
+#include <mem/vasa.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <kprint.h>
 
-extern void* page_table_base;
 vasa_t global_asa;
 
 // Add a node to the linked lists.
@@ -75,7 +74,6 @@ void vasa_merge(bool used) {
 
     while ( head != NULL && head->next != NULL ) {
         // Is the node continous?
-        kprintf("! %p %p\n", head->base + head->length, head->next->base);
         if ( head->base + head->length == head->next->base ) {
             // Merge the nodes and correct the linked list.
             vasa_node_t* mergeable = head->next;
@@ -204,13 +202,11 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size) {
 }
 
 // The VASA system will take up from the end of the kernel to the start of the page_table_base
-void vasa_init(void* start) {
-    unsigned long total_space = ((uintptr_t) page_table_base) - (uintptr_t) start;
-
+void vasa_init(void* start, unsigned long length) {
     vasa_node_t* type_head = (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
     type_head->next = NULL;
     type_head->base = start;
-    type_head->length = total_space;
+    type_head->length = length;
 
     global_asa.free_head = type_head;
     global_asa.used_head = NULL;
