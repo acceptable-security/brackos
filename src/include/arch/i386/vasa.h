@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 typedef enum {
     MEM_RAM,
     MEM_MMIO,
