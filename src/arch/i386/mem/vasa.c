@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <kprint.h>
 
 extern void* page_table_base;
 vasa_t global_asa;
@@ -74,6 +75,7 @@ void vasa_merge(bool used) {
 
     while ( head != NULL && head->next != NULL ) {
         // Is the node continous?
+        kprintf("! %p %p\n", head->base + head->length, head->next->base);
         if ( head->base + head->length == head->next->base ) {
             // Merge the nodes and correct the linked list.
             vasa_node_t* mergeable = head->next;
@@ -85,6 +87,42 @@ void vasa_merge(bool used) {
         }
 
         head = head->next;
+    }
+}
+
+// Print the current state of the global VASA
+void vasa_print_state() {
+    kprintf("free list:");
+
+    vasa_node_t* head = global_asa.free_head;
+
+    if ( head ) {
+        kprintf("\n")
+        ;
+        while ( head != NULL ) {
+            kprintf(" %p (%d)\n", head->base, head->length);
+
+            head = head->next;
+        }
+    }
+    else {
+        kprintf(" empty\n");
+    }
+
+    head = global_asa.used_head;
+    kprintf("used list: ");
+
+    if ( head ) {
+        kprintf("\n")
+        ;
+        while ( head != NULL ) {
+            kprintf(" %p (%d)\n", head->base, head->length);
+
+            head = head->next;
+        }
+    }
+    else {
+        kprintf(" empty\n");
     }
 }
 
