@@ -21,6 +21,8 @@ typedef struct {
     vasa_node_t* used_head; // head of the used list
 } vasa_t;
 
+void vasa_merge(bool used);
 void vasa_dealloc(void* ptr);
 void* vasa_alloc(vasa_memtype_t type, unsigned long size);
+void vasa_print_state();
 void vasa_init();
