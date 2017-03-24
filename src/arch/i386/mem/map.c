@@ -49,13 +49,19 @@ void memmap_to_frames(void* _multiboot) {
 }
 
 void* memmap(void* start, unsigned long length, unsigned long flags) {
-    if ( flags & MMAP_URGENT ) {
-        uintptr_t virt_start = ((uintptr_t) start) & ~0xFFF;
-        uintptr_t virt_end = ((uintptr_t) start + length) & ~0xFFF;
-        unsigned long page_cnt = (virt_end - virt_start) / PAGE_SIZE;
-        unsigned long paging_flags = flags; // TODO - actual flags parsing
+    // Find page aligned addresses
+    uintptr_t virt_start = ((uintptr_t) start) & ~0xFFF;
+    uintptr_t virt_end = ((uintptr_t) start + length) & ~0xFFF;
 
+    // Amount of pages necessary for this allocation
+    unsigned long page_cnt = (virt_end - virt_start) / PAGE_SIZE;
+
+    // Flags to be passed to the pager
+    unsigned long paging_flags = flags; // TODO - actual flags parsing
+
+    if ( flags & MMAP_URGENT ) {
         if ( flags & MMAP_CONTINOUS ) {
+            // Immediately allocate page_cnt continous pages
             void* pages = frame_alloc(page_cnt);
 
             if ( pages == NULL ) {
@@ -71,6 +77,7 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
             }
         }
         else {
+            // Immediately allocate page_cnt pages (by allocating 1 at a time, it won't necessarily be continous)
             for ( int i = 0; i < page_cnt; i++ ) {
                 void* page = frame_alloc(1);
 
