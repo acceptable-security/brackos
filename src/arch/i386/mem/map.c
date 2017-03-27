@@ -4,6 +4,7 @@
 
 #include <mem/frame.h>
 #include <mem/mmap.h>
+#include <mem/vasa.h>
 
 #include <stdint.h>
 #include <kprint.h>
@@ -49,6 +50,11 @@ void memmap_to_frames(void* _multiboot) {
 }
 
 void* memmap(void* start, unsigned long length, unsigned long flags) {
+    if ( !vasa_mark((uintptr_t) start, length, true) ) {
+        // Failed to allocate the virtual address space.
+        return NULL;
+    }
+
     // Find page aligned addresses
     uintptr_t virt_start = ((uintptr_t) start) & ~0xFFF;
     uintptr_t virt_end = ((uintptr_t) start + length) & ~0xFFF;
