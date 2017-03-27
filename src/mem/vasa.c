@@ -8,56 +8,6 @@
 
 vasa_t global_asa;
 
-bool vasa_mark(uintptr_t base, unsigned long length, bool used) {
-    // Make sure everything is merged so we odn't have any misproper finds.
-    vasa_merge(used);
-
-    vasa_node_t* prev = NULL;
-    vasa_node_t* head;
-
-    if ( used ) {
-        head = global_asa.used_head;
-    }
-    else {
-        head = global_asa.free_head;
-    }
-
-
-    uintptr_t end = base + length;
-
-    while ( head != NULL ) {
-        uintptr_t their_base = (uintptr_t) head->base;
-        uintptr_t their_end = their_base + head->length;
-
-        if ( base >= their_base && end <= their_end ) {
-            if ( base == their_base && end == their_end ) {
-                // We found an exact size, remove from the list.
-                prev->next = head->next;
-                kfree(head);
-
-                return true;
-            }
-            else {
-                // Cut the new chunk out of the chunk we found.
-                head->length = base - their_base;
-
-                vasa_node_t* new_node = (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
-                new_node->base = (void*) end;
-                new_node->length = their_end - end;
-                new_node->next = head->next;
-                head->next = new_node;
-
-                return true;
-            }
-        }
-
-        prev = head;
-        head = head->next;
-    }
-
-    return false;
-}
-
 // Add a node to the linked lists.
 void vasa_add_node(vasa_node_t* node, bool used) {
     if ( node == NULL ) {
@@ -109,6 +59,86 @@ void vasa_add_node(vasa_node_t* node, bool used) {
         // Ran to the end, add to the end.
         head->next = node;
     }
+}
+
+// Attempt to mark a specific area of memory used
+bool vasa_mark(uintptr_t base, unsigned long length, bool used) {
+    // Make sure everything is merged so we odn't have any misproper finds.
+    vasa_merge(used);
+
+    vasa_node_t* prev = NULL;
+    vasa_node_t* head;
+
+    // If we're setting used, we look in free, and if we're freeing, we look in used.
+    if ( used ) {
+        head = global_asa.free_head;
+    }
+    else {
+        head = global_asa.used_head;
+    }
+
+
+    uintptr_t end = base + length;
+
+    while ( head != NULL ) {
+        uintptr_t their_base = (uintptr_t) head->base;
+        uintptr_t their_end = their_base + head->length;
+
+        // If the chunk of memory is in range.
+        if ( base >= their_base && end <= their_end ) {
+            if ( base == their_base && end == their_end ) {
+                // We found an exact size, remove from the list and add to the other side
+                if ( prev ) {
+                    prev->next = head->next;
+                }
+                else {
+                    if ( used ) {
+                        global_asa.used_head = head->next;
+                    }
+                    else {
+                        global_asa.free_head = head->next;
+                    }
+                }
+
+                vasa_add_node(head, used);
+
+                return true;
+            }
+            else {
+                // tb           te
+                // |   b  e   |
+                //     |  |
+                //
+                // tb - b: stays
+                // b - e: other side
+                // e - te: stays
+                // Cut the new chunk out of the chunk we found and move it onto the other side
+
+                head->length = base - their_base;
+                // head is now s - a
+                // leave it in it's current position as it's correct
+
+                // put AB onto the other side
+                vasa_node_t* be_node = (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
+                be_node->base = (void*) base;
+                be_node->length = length;
+                vasa_add_node(be_node, used);
+
+                // allocate b - e and keep on this side
+                vasa_node_t* end_node = (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
+                end_node->base = (void*) end;
+                end_node->length = their_end - end;
+                vasa_add_node(end_node, !used);
+
+                return true;
+            }
+        }
+
+        prev = head;
+        head = head->next;
+    }
+
+    return false;
 }
 
 // Take the free or used lists and merge the chunks of memory if they're continuous
