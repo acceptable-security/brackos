@@ -33,15 +33,14 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     memmap_to_frames(multiboot);
     vasa_init(0xD0000000, (uintptr_t) page_table_base - 0xD0000000);
 
-    void* test = memmap(vasa_alloc(MEM_RAM, 4096*3), 4096*3, MMAP_RW | MMAP_URGENT);
-    kprintf("%p\n", test);
+    // memmap testing code:
+    // void* test = memmap(vasa_alloc(MEM_RAM, 4096*3), 4096*3, MMAP_RW | MMAP_URGENT);
+    // kprintf("%p\n", test);
+    // test = memmap(vasa_alloc(MEM_RAM, 4096), 4096, MMAP_RW | MMAP_URGENT);
+    // kprintf("%p\n", test);
+    // paging_print();
 
-    test = memmap(vasa_alloc(MEM_RAM, 4096), 4096, MMAP_RW | MMAP_URGENT);
-    kprintf("%p\n", test);
-
-    paging_print();
-
-    // VASA Testing code
+    // VASA testing code:
     // vasa_print_state();
     // void* test = vasa_alloc(MEM_RAM, 1);
     // kprintf("got %p\n", test);
@@ -52,7 +51,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     // vasa_merge(false);
     // vasa_print_state();
 
-    // Paging testing code
+    // Paging testing code:
     // paging_print();
     // paging_map(frame_alloc(1), (void*) 0x20000000, PAGE_PRESENT | PAGE_RW);
     // paging_print();

@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
     MEM_RAM,
@@ -23,6 +24,7 @@ typedef struct {
     vasa_node_t* used_head; // head of the used list
 } vasa_t;
 
+bool vasa_mark(uintptr_t base, unsigned long length, bool used);
 void vasa_merge(bool used);
 void vasa_dealloc(void* ptr);
 void* vasa_alloc(vasa_memtype_t type, unsigned long size);
