@@ -5,8 +5,27 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <kprint.h>
+#include <math.h>
 
 vasa_t global_asa;
+
+// Checks if a is directly next to b (and can be merged)
+static inline bool vasa_congruent(vasa_node_t* a, vasa_node_t* b) {
+    // If B is infront of A, start at A's base
+    if ( (uintptr_t) b->base > (uintptr_t) a->base ) {
+        return ((uintptr_t) a->base) + a->length == ((uintptr_t) b->base);
+    }
+    else {
+        return ((uintptr_t) b->base) + b->length == ((uintptr_t) a->base);
+    }
+}
+
+// Given two nodes, merge them. Second node is always freed
+void vasa_merge_node(vasa_node_t* a, vasa_node_t* b) {
+    a->base = min(a->base, b->base);
+    a->length += b->length;
+    kfree(b);
+}
 
 // Add a node to the linked lists.
 void vasa_add_node(vasa_node_t* node, bool used) {
@@ -20,6 +39,11 @@ void vasa_add_node(vasa_node_t* node, bool used) {
 
     while ( head ) {
         // Add the node into the first place before where the head's base is greater than us.
+        if ( vasa_congruent(node, head) ) {
+            vasa_merge_node(head, node);
+            return;
+        }
+
         if ( (uintptr_t) head->base > (uintptr_t) node->base ) {
             if ( prev ) {
                 // Add it inline
@@ -64,8 +88,6 @@ void vasa_add_node(vasa_node_t* node, bool used) {
 // Attempt to mark a specific area of memory used
 bool vasa_mark(uintptr_t base, unsigned long length, bool used) {
     // Make sure everything is merged so we odn't have any misproper finds.
-    vasa_merge(used);
-
     vasa_node_t* prev = NULL;
     vasa_node_t* head;
 
@@ -83,6 +105,11 @@ bool vasa_mark(uintptr_t base, unsigned long length, bool used) {
     while ( head != NULL ) {
         uintptr_t their_base = (uintptr_t) head->base;
         uintptr_t their_end = their_base + head->length;
+
+        // List is sorted, if we're past then we don't need to look anymore.
+        if ( (uintptr_t) head->base >= their_end ) {
+            break;
+        }
 
         // If the chunk of memory is in range.
         if ( base >= their_base && end <= their_end ) {
@@ -139,33 +166,6 @@ bool vasa_mark(uintptr_t base, unsigned long length, bool used) {
     }
 
     return false;
-}
-
-// Take the free or used lists and merge the chunks of memory if they're continuous
-void vasa_merge(bool used) {
-    vasa_node_t* head;
-
-    if ( used ) {
-        head = global_asa.used_head;
-    }
-    else {
-        head = global_asa.free_head;
-    }
-
-    while ( head != NULL && head->next != NULL ) {
-        // Is the node continuous?
-        if ( head->base + head->length == head->next->base ) {
-            // Merge the nodes and correct the linked list.
-            vasa_node_t* mergeable = head->next;
-            head->length += head->next->length;
-            head->next = head->next->next;
-            kfree(mergeable);
-
-            continue;
-        }
-
-        head = head->next;
-    }
 }
 
 // Print the current state of the global VASA

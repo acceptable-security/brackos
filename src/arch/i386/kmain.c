@@ -42,13 +42,12 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
 
     // VASA testing code:
     // vasa_print_state();
+    // kprintf("\n");
     // void* test = vasa_alloc(MEM_RAM, 1);
-    // kprintf("got %p\n", test);
+    // kprintf("got %p\n\n", test);
     // vasa_print_state();
+    // kprintf("\n");
     // vasa_dealloc(test);
-    // vasa_print_state();
-    // vasa_merge(true);
-    // vasa_merge(false);
     // vasa_print_state();
 
     // Paging testing code:

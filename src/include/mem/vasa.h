@@ -25,7 +25,6 @@ typedef struct {
 } vasa_t;
 
 bool vasa_mark(uintptr_t base, unsigned long length, bool used);
-void vasa_merge(bool used);
 void vasa_dealloc(void* ptr);
 void* vasa_alloc(vasa_memtype_t type, unsigned long size);
 void vasa_print_state();
