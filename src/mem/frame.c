@@ -89,13 +89,14 @@ void* frame_alloc(size_t want_count) {
 			uintptr_t address = next->address;
 			buddy_alloc->free_lists[count - 1] = next->next;
 
-			// Try to return it's buddies
-			// Keep halving the found size, returning the second parts of the halves into
-			// the free list as we go, until we find the right size.
-			while ( count > want_count ) {
-				count--;
-				frame_add_free_item(address + (count * PAGE_SIZE), count, true);
+            // Try to return it's buddies
+            uintptr_t chunk_end = address + (want_count * PAGE_SIZE);
+            uintptr_t return_count = (count - want_count);
+
+			if ( return_count > 0 ) {
+				frame_add_free_item(chunk_end, return_count, false);
 			}
+
 
 			return (void*) address;
 		}
@@ -121,14 +122,15 @@ void frame_status() {
 		if ( head != 0 ) {
 			kprintf("Count %d\n", count + 1);
 
-			while ( head != 0 ) {
-				kprintf("| %p\n", head->address);
-				head = head->next;
-			}
+			// while ( head != 0 ) {
+			// 	kprintf("| %p\n", head->address);
+			// 	head = head->next;
+			// }
 		}
 	}
 }
 
+// Given an chunk of memory's location and length, add it in chunks to the frame allocator.
 void frame_add_chunk(uintptr_t address, size_t size) {
 	// If we don't have enough space for a single frame, ignore.
 	if ( size <= PAGE_SIZE ) {

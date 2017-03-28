@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <kprint.h>
+#include <math.h>
 
 #define MEM_TYPE(x) ((x) == MULTIBOOT_MEMORY_AVAILABLE ? "AVAILABLE" : "RESERVED" )
 extern unsigned long kernel_base;
@@ -50,8 +51,9 @@ void memmap_to_frames(void* _multiboot) {
 }
 
 void* memmap(void* start, unsigned long length, unsigned long flags) {
-    if ( !vasa_mark((uintptr_t) start, length, true) ) {
+    if ( flags & MMAP_VALLOC && !vasa_mark((uintptr_t) start, length, true) ) {
         // Failed to allocate the virtual address space.
+        kprintf("Failed to allocate the vas\n");
         return NULL;
     }
 
@@ -60,7 +62,7 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
     uintptr_t virt_end = ((uintptr_t) start + length) & ~0xFFF;
 
     // Amount of pages necessary for this allocation
-    unsigned long page_cnt = (virt_end - virt_start) / PAGE_SIZE;
+    unsigned long page_cnt = max(1, (virt_end - virt_start) / PAGE_SIZE);
 
     // Flags to be passed to the pager
     unsigned long paging_flags = PAGE_RW | PAGE_PRESENT;//flags; // TODO - actual flags parsing
@@ -73,12 +75,14 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
             void* pages = frame_alloc(page_cnt);
 
             if ( pages == NULL ) {
+                kprintf("failed to allocate %d pages", page_cnt);
                 return NULL;
             }
 
             for ( int i = 0; i < page_cnt; i++ ) {
-                if ( !paging_map((uintptr_t) pages, virt_start + (page_cnt * PAGE_SIZE), paging_flags) ) {
+                if ( !paging_map((uintptr_t) pages + (i * PAGE_SIZE), virt_start + (i * PAGE_SIZE), paging_flags) ) {
                     frame_dealloc(pages, page_cnt);
+                    kprintf("Failed to map %p to %p\n", (uintptr_t) pages + (i * PAGE_SIZE), virt_start + (i * PAGE_SIZE));
                     // TODO - clean up the page dir/table.
                     return NULL;
                 }
@@ -98,7 +102,6 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
 
                 if ( !paging_map((uintptr_t) page, virt_start + (i * PAGE_SIZE), paging_flags) ) {
                     kprintf("failed to map %p to %p\n", page, (void*) virt_start + (page_cnt * PAGE_SIZE));
-                    for ( ;; ) {}
                     frame_dealloc(page, 1);
                     // TODO - dealloc frames before and fix page dir/table
                     return NULL;

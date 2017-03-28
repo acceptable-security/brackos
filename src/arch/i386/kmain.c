@@ -31,7 +31,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     early_kmalloc_init((void*) kernel_heap_start, kernel_heap_size);
     frame_init();
     memmap_to_frames(multiboot);
-    vasa_init(0xD0000000, (uintptr_t) page_table_base - 0xD0000000);
+    vasa_init((void*) 0xD0000000, (uintptr_t) page_table_base - 0xD0000000);
 
     // memmap testing code:
     // void* test = memmap(vasa_alloc(MEM_RAM, 4096*3), 4096*3, MMAP_RW | MMAP_URGENT);

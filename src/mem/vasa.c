@@ -22,6 +22,7 @@ static inline bool vasa_congruent(vasa_node_t* a, vasa_node_t* b) {
 
 // Given two nodes, merge them. Second node is always freed
 void vasa_merge_node(vasa_node_t* a, vasa_node_t* b) {
+    // Go to the lowest base and add the lengths.
     a->base = min(a->base, b->base);
     a->length += b->length;
     kfree(b);
@@ -38,12 +39,13 @@ void vasa_add_node(vasa_node_t* node, bool used) {
     vasa_node_t* head = used ? global_asa.used_head : global_asa.free_head;
 
     while ( head ) {
-        // Add the node into the first place before where the head's base is greater than us.
+        // If we find a congruent chunk, merge it.
         if ( vasa_congruent(node, head) ) {
             vasa_merge_node(head, node);
             return;
         }
 
+        // Add the node into the first place before where the head's base is greater than us.
         if ( (uintptr_t) head->base > (uintptr_t) node->base ) {
             if ( prev ) {
                 // Add it inline
