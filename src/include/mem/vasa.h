@@ -16,6 +16,7 @@ struct vasa_node {
 
     void* base;
     unsigned long length;
+    unsigned long flags;
 };
 
 // Memory is stored in a linked list of free and used chunks.
@@ -26,6 +27,6 @@ typedef struct {
 
 bool vasa_mark(uintptr_t base, unsigned long length, bool used);
 void vasa_dealloc(void* ptr);
-void* vasa_alloc(vasa_memtype_t type, unsigned long size);
+void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags);
 void vasa_print_state();
 void vasa_init(void* start, unsigned long length);

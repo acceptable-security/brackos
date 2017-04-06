@@ -51,15 +51,27 @@ void memmap_to_frames(void* _multiboot) {
 }
 
 void* memmap(void* start, unsigned long length, unsigned long flags) {
-    if ( flags & MMAP_VALLOC && !vasa_mark((uintptr_t) start, length, true) ) {
-        // Failed to allocate the virtual address space.
-        kprintf("Failed to allocate the vas\n");
-        return NULL;
-    }
-
     // Find page aligned addresses
     uintptr_t virt_start = ((uintptr_t) start) & ~0xFFF;
     uintptr_t virt_end = ((uintptr_t) start + length) & ~0xFFF;
+    uintptr_t virt_len = virt_end - virt_start;
+
+    // If they ask for a memory address, give them one.
+    if ( start == NULL ) {
+        start = vasa_alloc(MEM_RAM, virt_len, flags);
+
+        if ( start == NULL ) {
+            return NULL;
+        }
+    }
+    else {
+        // Else try and make their given address as used
+        if ( !vasa_mark(virt_start, virt_len, true) ) {
+            // Failed to allocate the virtual address space.
+            kprintf("Failed to allocate the vas\n");
+            return NULL;
+        }
+    }
 
     // Amount of pages necessary for this allocation
     unsigned long page_cnt = max(1, (virt_end - virt_start) / PAGE_SIZE);
@@ -113,9 +125,13 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
         return (void*) virt_start;
     }
     else {
-
+        // TODO - mark in the VASA for allocation
     }
 
     // TODO
     return NULL;
+}
+
+void memunmap(void* start, unsigned long length) {
+
 }

@@ -35,6 +35,11 @@ void vasa_add_node(vasa_node_t* node, bool used) {
         return;
     }
 
+    // Clear flags on things that aren't used.
+    if ( !used ) {
+        node->flags = 0;
+    }
+
     vasa_node_t* prev = NULL;
     vasa_node_t* head = used ? global_asa.used_head : global_asa.free_head;
 
@@ -241,7 +246,8 @@ void vasa_dealloc(void* ptr) {
 }
 
 // Allocate virtual address space for a given memory type
-void* vasa_alloc(vasa_memtype_t type, unsigned long size) {
+// Iterate through the VASA free list and find the first chunk of space that has enough to give.
+void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
     vasa_node_t* prev = NULL;
     vasa_node_t* head = global_asa.free_head;
 
@@ -270,6 +276,7 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size) {
             node->type = type;
             node->base = ptr;
             node->length = size;
+            node->flags = flags;
 
             vasa_add_node(node, true);
 
