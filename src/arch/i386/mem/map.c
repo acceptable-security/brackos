@@ -50,23 +50,31 @@ void memmap_to_frames(void* _multiboot) {
 
 }
 
+// Mark a certain section of memory as used.
 void* memmap(void* start, unsigned long length, unsigned long flags) {
     // Find page aligned addresses
     uintptr_t virt_start = ((uintptr_t) start) & ~0xFFF;
     uintptr_t virt_end = ((uintptr_t) start + length) & ~0xFFF;
     uintptr_t virt_len = virt_end - virt_start;
 
+    // If we're going to allocate the page, flag it.
+    if ( flags & MMAP_URGENT ) {
+        flags |= MMAP_ALLOCATED;
+    }
+
     // If they ask for a memory address, give them one.
     if ( start == NULL ) {
-        start = vasa_alloc(MEM_RAM, virt_len, flags);
+        virt_start = (uintptr_t) vasa_alloc(MEM_RAM, virt_len, flags);
 
-        if ( start == NULL ) {
+        if ( virt_start == 0 ) {
             return NULL;
         }
+
+        virt_end = virt_start + virt_len;
     }
     else {
         // Else try and make their given address as used
-        if ( !vasa_mark(virt_start, virt_len, true) ) {
+        if ( !vasa_mark(virt_start, virt_len, true, flags) ) {
             // Failed to allocate the virtual address space.
             kprintf("Failed to allocate the vas\n");
             return NULL;
@@ -77,9 +85,8 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
     unsigned long page_cnt = max(1, (virt_end - virt_start) / PAGE_SIZE);
 
     // Flags to be passed to the pager
-    unsigned long paging_flags = PAGE_RW | PAGE_PRESENT;//flags; // TODO - actual flags parsing
-
-    kprintf("setting %p for %d pages\n", virt_start, page_cnt);
+    // TODO - actual flags parsing
+    unsigned long page_flags = PAGE_RW | PAGE_PRESENT;
 
     if ( flags & MMAP_URGENT ) {
         if ( flags & MMAP_CONTINUOUS ) {
@@ -92,7 +99,7 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
             }
 
             for ( int i = 0; i < page_cnt; i++ ) {
-                if ( !paging_map((uintptr_t) pages + (i * PAGE_SIZE), virt_start + (i * PAGE_SIZE), paging_flags) ) {
+                if ( !paging_map((uintptr_t) pages + (i * PAGE_SIZE), virt_start + (i * PAGE_SIZE), page_flags) ) {
                     frame_dealloc(pages, page_cnt);
                     kprintf("Failed to map %p to %p\n", (uintptr_t) pages + (i * PAGE_SIZE), virt_start + (i * PAGE_SIZE));
                     // TODO - clean up the page dir/table.
@@ -112,7 +119,7 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
                     return NULL;
                 }
 
-                if ( !paging_map((uintptr_t) page, virt_start + (i * PAGE_SIZE), paging_flags) ) {
+                if ( !paging_map((uintptr_t) page, virt_start + (i * PAGE_SIZE), page_flags) ) {
                     kprintf("failed to map %p to %p\n", page, (void*) virt_start + (page_cnt * PAGE_SIZE));
                     frame_dealloc(page, 1);
                     // TODO - dealloc frames before and fix page dir/table
@@ -124,14 +131,61 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
 
         return (void*) virt_start;
     }
-    else {
-        // TODO - mark in the VASA for allocation
-    }
 
-    // TODO
-    return NULL;
+    // The allocations have been made in the virtual address space.
+    // If/when a page fault occurs, the page fault handler can handle
+    // it with the flags.
+
+    return (void*) virt_start;
 }
 
+// Mark a section of memory as no longer used.
+// This is also responsible for the deallocation of page frames.
 void memunmap(void* start, unsigned long length) {
+    if ( start == NULL ) {
+        kprintf("can't unmap null\n");
+        return;
+    }
 
+    uintptr_t virt_start = ((uintptr_t) start) & ~0xFFF;
+    uintptr_t virt_end = ((uintptr_t) start + length) & ~0xFFF;
+    uintptr_t virt_size = virt_end - virt_start;
+
+    // Acquire the flags.
+    unsigned long flags = vasa_get_flags(virt_start);
+
+    // Handle the allocated memory segments
+    if ( flags & MMAP_ALLOCATED ) {
+        if ( flags & MMAP_CONTINUOUS ) {
+            // Find the physical frame and deallocate it
+            uintptr_t physical = paging_find_physical(virt_start);
+            frame_dealloc((void*) physical, virt_size / PAGE_SIZE);
+
+            // Unmap all the pages
+            for ( int page = virt_start; page < virt_end; page += PAGE_SIZE ) {
+                if ( !paging_unmap(page) ) {
+                    // Failed to unmap page!
+                    // PANIC!!
+                    return;
+                }
+            }
+        }
+        else {
+            // Find each physical frame, deallocate it, and unmap the memory.
+            for ( int page = virt_start; page < virt_end; page += PAGE_SIZE ) {
+                uintptr_t physical = paging_find_physical(page);
+                frame_dealloc((void*) physical, 1);
+
+                if ( !paging_unmap(page) ) {
+                    kprintf("failed to unmap page\n");
+                    // Failed to unmap page!
+                    // PANIC!!
+                    return;
+                }
+            }
+        }
+    }
+
+    // Mark the virtul memory as unused.
+    vasa_mark(virt_start, length, false, 0);
 }

@@ -123,8 +123,6 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
     uintptr_t ent = (physical & ~0xFFF) | flags;
     table->entries[tab_ent] = *(page_entry_t*)&ent;
 
-    kprintf("mapped %d:%d to %p\n", dir_ent, tab_ent, ent);
-
     return true;
 }
 
@@ -148,16 +146,17 @@ bool paging_unmap(uintptr_t virt) {
         table->entries[tab_ent].flags &= ~PAGE_PRESENT;
     }
 
-    unsigned int present_count = 0;
+    unsigned int page_count = 0;
 
     for ( int i = 0; i < 1024; i++ ) {
-        if ( table->entries[tab_ent].flags & PAGE_PRESENT ) {
-            present_count++;
+        if ( table->entries[i].flags != 0 &&
+             table->entries[i].address != 0 ) {
+            page_count++;
         }
     }
 
     // If the page table is now empty, release it.
-    if ( present_count == 0 ) {
+    if ( page_count == 0 ) {
         kprintf("page table empty, releasing...\n");
         uintptr_t page = ((uintptr_t) page_directory_table->tables[dir_ent]) & ~0xFFF;
         frame_dealloc((void*) page, 1);
@@ -165,5 +164,15 @@ bool paging_unmap(uintptr_t virt) {
     }
 
 
-    return false;
+    return true;
+}
+
+// Get the physical address of a given virtual address
+uintptr_t paging_find_physical(uintptr_t virt) {
+    uintptr_t dir_ent = virt >> 22;
+    uintptr_t tab_ent = virt >> 12 & 0x03FF;
+
+    page_table_t* table = page_table_base + dir_ent;
+    uintptr_t addr = *(uintptr_t*)&table->entries[tab_ent];
+    return addr & ~0xFFF;
 }

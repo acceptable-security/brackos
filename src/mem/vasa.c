@@ -31,7 +31,6 @@ void vasa_merge_node(vasa_node_t* a, vasa_node_t* b) {
 // Add a node to the linked lists.
 void vasa_add_node(vasa_node_t* node, bool used) {
     if ( node == NULL ) {
-        // TODO - no node
         return;
     }
 
@@ -44,8 +43,9 @@ void vasa_add_node(vasa_node_t* node, bool used) {
     vasa_node_t* head = used ? global_asa.used_head : global_asa.free_head;
 
     while ( head ) {
-        // If we find a congruent chunk, merge it.
-        if ( vasa_congruent(node, head) ) {
+        // If we find a congruent chun and we're freeing, merge it.
+        // Can't merge in used because not all mappings are equal
+        if ( vasa_congruent(node, head) && !used) {
             vasa_merge_node(head, node);
             return;
         }
@@ -77,7 +77,7 @@ void vasa_add_node(vasa_node_t* node, bool used) {
         head = head->next;
     }
 
-    if ( head == NULL ) {
+    if ( prev == NULL ) {
         // No head, just add it in.
         if ( used ) {
             global_asa.used_head = node;
@@ -88,12 +88,13 @@ void vasa_add_node(vasa_node_t* node, bool used) {
     }
     else {
         // Ran to the end, add to the end.
-        head->next = node;
+        prev->next = node;
+        node->next = NULL;
     }
 }
 
 // Attempt to mark a specific area of memory used
-bool vasa_mark(uintptr_t base, unsigned long length, bool used) {
+bool vasa_mark(uintptr_t base, unsigned long length, bool used, unsigned long flags) {
     // Make sure everything is merged so we odn't have any misproper finds.
     vasa_node_t* prev = NULL;
     vasa_node_t* head;
@@ -134,6 +135,7 @@ bool vasa_mark(uintptr_t base, unsigned long length, bool used) {
                     }
                 }
 
+                head->flags = flags;
                 vasa_add_node(head, used);
 
                 return true;
@@ -156,12 +158,14 @@ bool vasa_mark(uintptr_t base, unsigned long length, bool used) {
                 vasa_node_t* be_node = (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
                 be_node->base = (void*) base;
                 be_node->length = length;
+                be_node->flags = flags;
                 vasa_add_node(be_node, used);
 
                 // allocate b - e and keep on this side
                 vasa_node_t* end_node = (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
                 end_node->base = (void*) end;
                 end_node->length = their_end - end;
+                end_node->flags = head->flags;
                 vasa_add_node(end_node, !used);
 
                 return true;
@@ -211,6 +215,26 @@ void vasa_print_state() {
     }
 }
 
+// Return the flags given a base
+unsigned long vasa_get_flags(uintptr_t base) {
+    vasa_node_t* head = global_asa.used_head;
+
+    if ( head == NULL ) {
+        return 0;
+    }
+
+    while ( head != NULL ) {
+        kprintf("%p\n", head->base);
+        if ( head->base == (void*) base ) {
+            return head->flags;
+        }
+
+        head = head->next;
+    }
+
+    return 0;
+}
+
 // Deallocate a virtual address space ptr.
 void vasa_dealloc(void* ptr) {
     vasa_node_t* prev = NULL;
@@ -253,6 +277,7 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
 
     while ( head != NULL ) {
         if ( head->length >= size ) {
+            // We found space, allocate from it.
             void* ptr = head->base;
             vasa_node_t* node;
 
@@ -279,7 +304,6 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
             node->flags = flags;
 
             vasa_add_node(node, true);
-
             return ptr;
         }
 

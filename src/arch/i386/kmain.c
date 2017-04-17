@@ -34,11 +34,12 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     vasa_init((void*) 0xD0000000, (uintptr_t) page_table_base - 0xD0000000);
 
     // memmap testing code:
-    // void* test = memmap(vasa_alloc(MEM_RAM, 4096*3), 4096*3, MMAP_RW | MMAP_URGENT);
-    // kprintf("%p\n", test);
-    // test = memmap(vasa_alloc(MEM_RAM, 4096), 4096, MMAP_RW | MMAP_URGENT);
-    // kprintf("%p\n", test);
-    // paging_print();
+    void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);
+    void* test2 = memmap(NULL, 4096, MMAP_RW | MMAP_URGENT);
+
+    memunmap(test1, 4096 * 3);
+
+    paging_print();
 
     // VASA testing code:
     // vasa_print_state();

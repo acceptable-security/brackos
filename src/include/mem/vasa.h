@@ -25,8 +25,13 @@ typedef struct {
     vasa_node_t* used_head; // head of the used list
 } vasa_t;
 
-bool vasa_mark(uintptr_t base, unsigned long length, bool used);
+bool vasa_mark(uintptr_t base, unsigned long length, bool used, unsigned long flags);
+unsigned long vasa_get_flags(uintptr_t base);
+void vasa_set_flags(uintptr_t base, unsigned long flags);
+bool vasa_is_allocated(uintptr_t base);
+
 void vasa_dealloc(void* ptr);
 void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags);
+
 void vasa_print_state();
 void vasa_init(void* start, unsigned long length);
