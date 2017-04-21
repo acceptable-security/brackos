@@ -1,8 +1,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-
+#include <kprint.h>
 #include <mem/pool.h>
+
+// Bitmap length is the maximum amount of items, divided by the size of unsigned long, rounded up.
+#define DIV_ROUND_UP(DIV, NUM) (DIV) / (NUM) + \
+                               ((DIV) % (NUM) > 0 ? 1 : 0) \
 
 // Initialize the memory pool allocator at a certain address with a certain length
 bool mempool_initialize(void* mempool_base, unsigned long length) {
@@ -22,6 +26,8 @@ bool mempool_initialize(void* mempool_base, unsigned long length) {
         global_hdr->pool_address[i] = NULL;
     }
 
+    kprintf("initialized mempool with %m space\n", global_hdr->total_space);
+
     return true;
 }
 
@@ -34,9 +40,9 @@ mempool_t mempool_register(void* mempool_base, unsigned long max_elements, unsig
         return 0;
     }
 
-    unsigned long total_space = sizeof(mempool_hdr_t) +                     // Header size
-                                (max_elements / sizeof(unsigned long)) +    // Usage bitmap
-                                max_elements * element_size;                // Memory pool
+    unsigned long total_space = sizeof(mempool_hdr_t) +                             // Header size
+                                DIV_ROUND_UP(max_elements, sizeof(unsigned long)) + // Usage bitmap
+                                max_elements * element_size;                        // Memory pool
 
     // Not enough space for allocation
     if ( global_hdr->remaining_space <= total_space ) {
@@ -54,6 +60,8 @@ mempool_t mempool_register(void* mempool_base, unsigned long max_elements, unsig
             global_hdr->remaining_space -= total_space;
             global_hdr->space_head += total_space;
 
+            kprintf("registered mempool with %d elements using %d bytes\n", max_elements, total_space);
+
             // Insert
             global_hdr->pool_address[i] = pool_hdr;
             return i + 1;
@@ -66,7 +74,8 @@ mempool_t mempool_register(void* mempool_base, unsigned long max_elements, unsig
 
 // Allocate from a memory pool
 void* mempool_alloc(void* mempool_base, mempool_t pool) {
-    if ( pool == 0 ) {
+    if ( pool == 0 || pool >= MEMPOOL_MAX_SPACES ) {
+        kprintf("empty pool\n");
         return NULL;
     }
 
@@ -74,6 +83,7 @@ void* mempool_alloc(void* mempool_base, mempool_t pool) {
 
     // Check magic
     if ( global_hdr->magic != MEMPOOL_MAGIC ) {
+        kprintf("invalid mempool magic\n");
         return 0;
     }
 
@@ -81,22 +91,29 @@ void* mempool_alloc(void* mempool_base, mempool_t pool) {
 
     // Make sure there is a pool where they're asking.
     if ( pool_hdr == NULL ) {
+        kprintf("bad mempool\n");
         return NULL;
     }
 
-    unsigned long usage_bitmap_size = pool_hdr->max_elements / sizeof(unsigned long);
-    unsigned long usage_bitmap_length = usage_bitmap_size / sizeof(unsigned long);
+    unsigned long usage_bitmap_size = DIV_ROUND_UP(pool_hdr->max_elements, sizeof(unsigned long));
     uintptr_t usage_bitmap_base = (uintptr_t) pool_hdr + sizeof(mempool_hdr_t);
 
-    for ( int i = 0; i < usage_bitmap_length; i++ ) {
+    for ( int i = 0; i < usage_bitmap_size; i++ ) {
         // Get the i-th unsigned long in the bitmap
         unsigned long* usage_bitmap_element = (unsigned long*)(usage_bitmap_base + (i * sizeof(unsigned long)));
 
         // Try to find a bit that isn't set
         for ( int j = 0; j < sizeof(unsigned long); j++ ) {
+            // Make sure we dont go outside our space.
+            if ( j + (i * sizeof(unsigned long)) >= pool_hdr->max_elements ) {
+                kprintf("out of allocs in mempool\n");
+                return NULL;
+            }
+
+            // Is the j-th bit unset?
             if ( !(*usage_bitmap_element & (1 << j)) ) {
                 // Calculate address
-                unsigned long element_num = j * sizeof(unsigned long) + i;
+                unsigned long element_num = i * sizeof(unsigned long) + j;
                 uintptr_t addr = usage_bitmap_base + usage_bitmap_size + (pool_hdr->element_size * element_num);
 
                 // Mark as used
@@ -107,12 +124,13 @@ void* mempool_alloc(void* mempool_base, mempool_t pool) {
         }
     }
 
+    kprintf("out of allocs in mempool\n");
     return NULL;
 }
 
 // Deallocate from a memory pool
 void mempool_dealloc(void* mempool_base, mempool_t pool, void* addr) {
-    if ( pool == 0 ) {
+    if ( pool == 0 || pool >= MEMPOOL_MAX_SPACES ) {
         return;
     }
 
@@ -130,7 +148,7 @@ void mempool_dealloc(void* mempool_base, mempool_t pool, void* addr) {
         return;
     }
 
-    unsigned long usage_bitmap_size = pool_hdr->max_elements / sizeof(unsigned long);
+    unsigned long usage_bitmap_size = DIV_ROUND_UP(pool_hdr->max_elements, sizeof(unsigned long));
     uintptr_t usage_bitmap_base = (uintptr_t) pool_hdr + sizeof(mempool_hdr_t);
 
     // First, calculate which element within the entire memory pool the address is (it's linear so just subtract the
