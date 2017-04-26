@@ -12,6 +12,7 @@
 #define ACPI_SIGNATURE_APIC  0x41504943
 #define ACPI_SIGNATURE_HPET  0x48504554
 
+// Search memory for the RSDP signature
 rsdp_desc_t* rsdp_locate() {
     uintptr_t start = 0xC00E0000;
     uintptr_t end = 0xC00FFFFF;
@@ -27,6 +28,7 @@ rsdp_desc_t* rsdp_locate() {
     return NULL;
 }
 
+// Map an ACPI table into physical memory. Right now this wastes an inane amount of memory.
 void* acpi_map_ptr(void* phys, unsigned long size) {
     // TODO - holy god not this
     void* virt = vasa_alloc(MEM_PCI, 4096, 0);
@@ -42,6 +44,7 @@ void* acpi_map_ptr(void* phys, unsigned long size) {
     return virt + ((uintptr_t) phys & 0xFFF);
 }
 
+// Validate an ACPI SDT checksum
 bool acpi_validate(void* ptr, unsigned long len) {
     uint8_t* bytes = (uint8_t*) ptr;
     unsigned long validate = 0;
@@ -53,6 +56,7 @@ bool acpi_validate(void* ptr, unsigned long len) {
     return (validate & 0xFF) == 0;
 }
 
+// Parse the Multi APIC Descriptor Table
 void acpi_parse_madt(acpi_madt_t* madt) {
     uintptr_t records_start = ((uintptr_t) madt) + sizeof(acpi_madt_t);
     uintptr_t records_end = records_start + (madt->table.length - sizeof(acpi_madt_t));
@@ -196,6 +200,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
     }
 }
 
+// Parse the Fixed ACPI Descriptor Table
 void acpi_parse_fadt(acpi_fadt_t* fadt) {
     // Make sure ACPI is enabled
     if ( fadt->smi_cmd_port == 0 || (fadt->acpi_enable == 0 && fadt->acpi_disable == 0) ) {
@@ -221,6 +226,7 @@ void acpi_parse_fadt(acpi_fadt_t* fadt) {
     }
 }
 
+// Parse the Root System Descriptor Table
 bool acpi_parse_rsdt(acpi_rsdt_t* rsdt) {
     if ( !acpi_validate(rsdt, rsdt->table.length) ) {
         kprintf("ACPI: failed to validate rsdt\n");
@@ -229,8 +235,6 @@ bool acpi_parse_rsdt(acpi_rsdt_t* rsdt) {
 
     uintptr_t ptrs_start = ((uintptr_t) rsdt) + sizeof(acpi_sdt_t);
     uintptr_t ptrs_end = ptrs_start + (rsdt->table.length - sizeof(acpi_sdt_t));
-
-    kprintf("checking %p to %p for ACPI tables\n", ptrs_start, ptrs_end);
 
     for ( uintptr_t ptr = ptrs_start; ptr < ptrs_end; ptr += sizeof(void*) ) {
         uintptr_t phys_sdt = *(uintptr_t*) ptr;
@@ -247,6 +251,7 @@ bool acpi_parse_rsdt(acpi_rsdt_t* rsdt) {
     return true;
 }
 
+// Find the correct SDT parser based off of signature
 void acpi_parse_table(acpi_sdt_t* ptr) {
     uint32_t name = (ptr->signature[0] << 24) |
                     (ptr->signature[1] << 16) |
@@ -279,6 +284,7 @@ void acpi_parse_table(acpi_sdt_t* ptr) {
     }
 }
 
+// Initialize ACPI
 bool acpi_init() {
     rsdp_desc_t* rsdp = rsdp_locate();
 
@@ -292,7 +298,7 @@ bool acpi_init() {
         return false;
     }
 
-    kprintf("rsdp valid\nrevision: %d\noem: %s\nptr: %p\n", rsdp->revision, rsdp->oem, rsdp->rsdt);
+    kprintf("acpi oem: %s\n", rsdp->oem);
 
     acpi_rsdt_t* rsdt = acpi_map_ptr((void*) rsdp->rsdt, sizeof(acpi_rsdt_t));
 
@@ -300,8 +306,6 @@ bool acpi_init() {
         kprintf("ACPI: failed to map rsdt\n");
         return false;
     }
-
-    kprintf("%c%c%c%c\n", rsdt->table.signature[0], rsdt->table.signature[1], rsdt->table.signature[2], rsdt->table.signature[3]);
 
     acpi_parse_rsdt(rsdt);
 
