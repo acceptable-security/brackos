@@ -42,6 +42,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     kprintf(apic_supported() ? "apic supported\n" : "apic unsupported\n");
     acpi_init();
 
+    apic_enable();
 
     // memmap testing code:
     // void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);

@@ -266,7 +266,7 @@ void acpi_parse_table(acpi_sdt_t* ptr) {
 
         case ACPI_SIGNATURE_APIC:
             kprintf("Found the Multiple APIC Descriptor Table!\n");
-            acpi_parse_madt((acpi_madt_t*) ptr);
+            // acpi_parse_madt((acpi_madt_t*) ptr);
             break;
 
         case ACPI_SIGNATURE_HPET:

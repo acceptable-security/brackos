@@ -1,5 +1,10 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <cpuid.h>
+
+#ifndef bit_MSR
+#define bit_MSR 0x00000020
+#endif
 
 bool cpu_has_msr() {
     uint32_t _unused, eax, edx;
