@@ -1,6 +1,8 @@
+#include <arch/i386/apic.h>
 #include <arch/i386/gdt.h>
 #include <arch/i386/map.h>
 #include <arch/i386/paging.h>
+#include <arch/i386/acpi.h>
 #include <mem/vasa.h>
 
 #include <drivers/vga.h>
@@ -36,6 +38,9 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     memmap((void*) 0xD0000000, 0xA0000, MMAP_RW | MMAP_URGENT);
     mempool_initialize((void*) 0xD0000000, 0xA0000);
     mempool_t global_pool = mempool_register((void*) 0xD0000000, 10, 10);
+
+    kprintf(apic_supported() ? "apic supported\n" : "apic unsupported\n");
+    acpi_init();
 
 
     // memmap testing code:
