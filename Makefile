@@ -1,12 +1,12 @@
 ARCH = i386
 ASM = nasm
 CC = i386-elf-gcc
+LD = i386-elf-gcc
 
-DEFAULT_CFLAGS = -Wall -O -fstrength-reduce -fomit-frame-pointer -ffreestanding  -finline-functions -c -g -std=c11
-
+DEFAULT_CFLAGS = -Wall -O -fomit-frame-pointer -ffreestanding  -finline-functions -c -g -std=c11
 ASMFLAGS = -f elf32 -g
 CFLAGS = $(DEFAULT_CFLAGS) -m32 -Isrc/include/
-LFLAGS = -m32 -ffreestanding -O2 -nostdlib -g
+LDFLAGS = -m32 -ffreestanding -O2 -nostdlib -g
 
 C_SOURCES = $(shell find src -name '*.c')
 C_OBJECTS = $(subst src, build, $(C_SOURCES:.c=.o))
@@ -15,7 +15,7 @@ ASM_SOURCES = $(shell find src -name '*.asm')
 ASM_OBJECTS = $(subst src, build, $(ASM_SOURCES:.asm=.o))
 
 kernel.bin: $(C_OBJECTS) $(ASM_OBJECTS)
-	$(CC) $(LFLAGS) -T src/arch/$(ARCH)/linker.ld -o kernel.bin $(ASM_OBJECTS) $(C_OBJECTS)
+	$(LD) $(LDFLAGS) -T src/arch/$(ARCH)/linker.ld -o kernel.bin $(ASM_OBJECTS) $(C_OBJECTS)
 
 
 $(C_OBJECTS):

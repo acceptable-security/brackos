@@ -94,6 +94,10 @@ void paging_print() {
 }
 
 bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
+    // Only mapping 4KiB aligned addresses
+    // TODO - account for PAE
+    physical = physical & ~0xFFF;
+
     uintptr_t dir_ent = virt >> 22;
     uintptr_t tab_ent = virt >> 12 & 0x03FF;
 
@@ -114,6 +118,11 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
     }
 
     if ( PAGE_TABLE_TEST(table->entries[tab_ent].flags, PAGE_PRESENT) ) {
+        kprintf("%p v. %p\n", *(uintptr_t*)&table->entries[tab_ent], physical);
+        if ( table->entries[tab_ent].address == physical && table->entries[tab_ent].flags == flags ) {
+            // Already mapped at the same address
+            return true;
+        }
         // Don't remap the same page
         // TODO - panic?
         kprintf("this page is already mapped\n");

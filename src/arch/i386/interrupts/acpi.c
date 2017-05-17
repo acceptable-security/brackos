@@ -12,10 +12,13 @@
 #define ACPI_SIGNATURE_APIC  0x41504943
 #define ACPI_SIGNATURE_HPET  0x48504554
 
+extern unsigned long kernel_base;
+
 // Search memory for the RSDP signature
 rsdp_desc_t* rsdp_locate() {
     uintptr_t start = 0xC00E0000;
     uintptr_t end = 0xC00FFFFF;
+
     uint32_t sig1 = ACPI_SIGNATURE_RSDP1;
     uint32_t sig2 = ACPI_SIGNATURE_RSDP2;
 
@@ -30,7 +33,6 @@ rsdp_desc_t* rsdp_locate() {
 
 // Map an ACPI table into physical memory. Right now this wastes an inane amount of memory.
 void* acpi_map_ptr(void* phys, unsigned long size) {
-    // TODO - holy god not this
     void* virt = vasa_alloc(MEM_PCI, 4096, 0);
 
     if ( virt == NULL ) {

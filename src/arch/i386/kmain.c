@@ -1,9 +1,13 @@
-#include <arch/i386/apic.h>
 #include <arch/i386/gdt.h>
 #include <arch/i386/map.h>
 #include <arch/i386/paging.h>
 #include <arch/i386/acpi.h>
-#include <mem/vasa.h>
+
+#include <arch/i386/apic.h>
+#include <arch/i386/pic.h>
+
+#include <arch/i386/idt.h>
+#include <arch/i386/irq.h>
 
 #include <drivers/vga.h>
 
@@ -11,10 +15,12 @@
 #include <mem/early.h>
 #include <mem/mmap.h>
 #include <mem/pool.h>
+#include <mem/vasa.h>
 
 #include <multiboot.h>
 #include <kprint.h>
 #include <stdint.h>
+#include <string.h>
 
 extern uintptr_t virtual_end;
 extern void* page_table_base;
@@ -35,14 +41,24 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     memmap_to_frames(multiboot);
     vasa_init((void*) 0xD0000000, (uintptr_t) page_table_base - 0xD0000000);
 
-    memmap((void*) 0xD0000000, 0xA0000, MMAP_RW | MMAP_URGENT);
-    mempool_initialize((void*) 0xD0000000, 0xA0000);
-    mempool_t global_pool = mempool_register((void*) 0xD0000000, 10, 10);
+    // acpi_init();
 
-    kprintf(apic_supported() ? "apic supported\n" : "apic unsupported\n");
-    acpi_init();
+    idt_init();
+    idt_load();
 
-    apic_enable();
+    if ( false /* apic_supported() */ ) {
+        apic_enable();
+    }
+    else {
+        pic_enable(0x20, 0x28);
+    }
+
+    irq_init();
+    nmi_init();
+
+    __asm__ volatile ("sti");
+
+    kprintf("Waiting for interrupt...\n");
 
     // memmap testing code:
     // void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);
@@ -68,4 +84,6 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     // paging_print();
     // paging_unmap((void*) 0x20000000);
     // paging_print();
+
+    for ( ;; ) __asm__ ("hlt");
 }

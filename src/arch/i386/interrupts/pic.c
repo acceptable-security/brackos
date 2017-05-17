@@ -1,6 +1,7 @@
 // Device code for the 8259 PIC
 #include <arch/i386/io.h>
 #include <arch/i386/pic.h>
+#include <kprint.h>
 #include <stdint.h>
 
 // Map the PICs to IDT offsets
@@ -39,6 +40,8 @@ void pic_enable(unsigned int master_offset, unsigned int slave_offset) {
     io_wait();
     outportb(PIC_DATA_2, slave_mask);
     io_wait();
+
+    kprintf("pic enabled\n");
 }
 
 // Disable the PIC
@@ -54,6 +57,24 @@ void pic_eoi(uint8_t irq) {
     }
 
     outportb(PIC_CMD_1, PIC_EOI);
+    io_wait();
+
+    kprintf("pic eoi sent\n");
+}
+
+// Return the I
+uint16_t pic_get_irr() {
+    outportb(PIC_CMD_1, PIC_READ_IRR);
+    outportb(PIC_CMD_2, PIC_READ_IRR);
+    io_wait();
+    return (inportb(PIC_CMD_2) << 8) | inportb(PIC_CMD_1);
+}
+
+uint16_t pic_get_isr() {
+    outportb(PIC_CMD_1, PIC_READ_ISR);
+    outportb(PIC_CMD_2, PIC_READ_ISR);
+    io_wait();
+    return (inportb(PIC_CMD_2) << 8) | inportb(PIC_CMD_1);
 }
 
 // Mask a certain interrupt on either master or slave

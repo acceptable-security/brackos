@@ -36,9 +36,10 @@ _loader:
     jmp ecx
 
 higherhalf:
-    ; Remove identity map for intial 4MB
-    mov dword [initial_pd], 0
-    invlpg [0]
+    ; I've removed this unmap to test the viability of keeping it.
+    ; ; Remove identity map for intial 4MB
+    ; mov dword [initial_pd], 0
+    ; invlpg [0]
 
     ; Add a recursive page directory entry.
     mov ecx, initial_pd_real
@@ -59,4 +60,4 @@ higherhalf:
     push eax ; multiboot magic
 
     call  kernel_main
-    jmp $
+    hlt

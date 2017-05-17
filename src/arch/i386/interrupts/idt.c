@@ -1,46 +1,47 @@
 #include <arch/i386/idt.h>
 #include <stdint.h>
+#include <kprint.h>
 
-idt_t idt;
+extern uintptr_t irq_common_stub;
+
+idt_gate_t gates[IDT_GATE_COUNT];
+idt_t idtp;
 
 void idt_empty_entry() {
     __asm__ volatile("iretl");
 }
 
 // Set a gate in the IDT
-void idt_set_gate(unsigned int gate, uintptr_t address, uint16_t selector, uint8_t gate_type) {
+void idt_set_gate(unsigned int gate, uintptr_t address, uint16_t selector, uint8_t flags) {
     if ( gate >= IDT_GATE_COUNT ) {
         return;
     }
 
-    // Figure out the storage segment
-    uint8_t storage_segment = 1;
-
-    if ( gate_type == IDT_GATE_32_INTERRUPT || gate_type == IDT_GATE_32_TRAP ) {
-        storage_segment = 0;
-    }
-
     // Store result
-    idt.gates[gate] = (idt_gate_t) {
-        .offset_low = gate & 0xFFFF,
+    gates[gate] = (idt_gate_t) {
+        .offset_low = address & 0xFFFF,
+        .offset_high = (address >> 16) & 0xFFFF,
+
         .selector = selector,
-        .unused = 0,
-        .gate_type = gate_type,
-        .storage_segment = storage_segment,
-        .descriptor_priv = 0,
-        .present = 1,
-        .offset_high = (gate >> 16) & 0xFFFF
+        .flags = flags,
+        .unused = 0
     };
 }
 
 // Load the IDT
 void idt_load() {
-    __asm__ ( "lidt (%0)" : : "m"(idt) );
+    idtp.length = (sizeof(idt_gate_t) * IDT_GATE_COUNT) - 1;
+    idtp.base = (uintptr_t) &gates;
+
+    __asm__( "lidt %0" : : "g"(idtp) );
+    kprintf("idt %p loaded\n", &idtp);
 }
 
 // Create an initial empty IDT
 void idt_init() {
     for ( int i = 0; i < IDT_GATE_COUNT; i++ ) {
-        idt_set_gate(i, (uintptr_t) idt_empty_entry, 0x08, IDT_GATE_32_INTERRUPT);
+        idt_set_gate(i, (uintptr_t) idt_empty_entry, 0x08, 0x8E);
     }
+
+    kprintf("idt installed\n");
 }

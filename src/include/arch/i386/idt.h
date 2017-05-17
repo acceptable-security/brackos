@@ -1,3 +1,6 @@
+#ifndef _IDT_H
+#define _IDT_H
+
 #include <stdint.h>
 
 // Gate types
@@ -19,20 +22,26 @@ typedef struct {
     uint16_t selector;
     uint8_t unused; // must be set to 0
 
-        // Flags.
-    uint8_t gate_type : 4;
-    uint8_t storage_segment : 1;
-    uint8_t descriptor_priv : 2;
-    uint8_t present : 1;
+    uint8_t flags;
 
     uint16_t offset_high;
 } __attribute__((packed)) idt_gate_t;
 
 typedef struct {
     uint16_t length;
-    idt_gate_t gates[IDT_GATE_COUNT];
+    uint32_t base;
 } __attribute__((packed)) idt_t;
+
+typedef struct {
+    unsigned int gs, fs, es, ds;
+    unsigned int edi, esi, ebp, esp, ebx, edx, ecx, eax;
+    unsigned int int_no, err_code;
+    unsigned int eip, cs, eflags, useresp, ss;
+} idt_reg_stack_t;
+
 
 void idt_set_gate(unsigned int gate, uintptr_t address, uint16_t selector, uint8_t gate_type);
 void idt_load();
 void idt_init();
+
+#endif

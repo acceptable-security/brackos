@@ -6,6 +6,14 @@
 #define bit_MSR 0x00000020
 #endif
 
+#ifndef bit_APIC
+#define bit_APIC 0x00000200
+#endif
+
+#define IA32_APIC_BASE_MSR        0x1B
+#define IA32_APIC_BASE_MSR_BSP    0x100
+#define IA32_APIC_BASE_MSR_ENABLE 0x800
+
 bool cpu_has_msr() {
     uint32_t _unused, eax, edx;
     __get_cpuid(1, &eax, &edx, &_unused, &_unused);

@@ -54,8 +54,9 @@ our_gdt:
 gdt_init:
     push ebp
     mov ebp, esp
-
-    lgdt [our_gdt]
+    mov eax, our_gdt
+    ; sub eax, 0xC0000000
+    lgdt [eax]
     mov ax, 0x10
     mov ds, ax
     mov es, ax
@@ -63,7 +64,7 @@ gdt_init:
     mov gs, ax
     mov ss, ax
     jmp 0x08:gdt_flush
-    
+
 gdt_flush:
     pop ebp
     ret
