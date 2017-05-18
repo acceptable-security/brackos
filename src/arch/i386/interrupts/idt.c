@@ -43,5 +43,5 @@ void idt_init() {
         idt_set_gate(i, (uintptr_t) idt_empty_entry, 0x08, 0x8E);
     }
 
-    kprintf("idt installed\n");
+    kprintf("idt setup\n");
 }

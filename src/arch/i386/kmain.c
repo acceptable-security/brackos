@@ -8,6 +8,7 @@
 
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
+#include <arch/i386/pit.h>
 
 #include <drivers/vga.h>
 
@@ -47,6 +48,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     idt_load();
 
     if ( false /* apic_supported() */ ) {
+        pic_disable();
         apic_enable();
     }
     else {
@@ -55,10 +57,10 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
 
     irq_init();
     nmi_init();
+    pit_init();
 
     __asm__ volatile ("sti");
-
-    kprintf("Waiting for interrupt...\n");
+    kprintf("interrupts enabled\n");
 
     // memmap testing code:
     // void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);

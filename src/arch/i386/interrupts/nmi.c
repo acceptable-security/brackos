@@ -12,5 +12,5 @@ void nmi_init() {
         idt_set_gate(i, (uintptr_t) nmi_handle, 0x08, 0x8E);
     }
 
-    kprintf("nmi installed\n");
+    kprintf("nmi setup\n");
 }

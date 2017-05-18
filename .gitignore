@@ -2,3 +2,5 @@ isodir/
 build/
 .DS_Store
 kernel.bin
+qemu.log
+.gdb_history

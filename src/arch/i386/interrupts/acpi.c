@@ -311,7 +311,7 @@ bool acpi_init() {
 
     acpi_parse_rsdt(rsdt);
 
-    kprintf("ACPI: successfully initialized!\n");
+    kprintf("acpi setup\n");
 
     return true;
 }

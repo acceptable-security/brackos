@@ -84,5 +84,5 @@ void apic_enable() {
     // Enable bit 8 in the spurius interrupt vector to get interrupts
     outportb(0xF0, inportb(0xF0) | 0x100);
 
-    kprintf("apic initialized at %p.\n", apic_base);
+    kprintf("apic setup at %p.\n", apic_base);
 }

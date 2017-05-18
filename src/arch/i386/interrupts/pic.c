@@ -41,7 +41,7 @@ void pic_enable(unsigned int master_offset, unsigned int slave_offset) {
     outportb(PIC_DATA_2, slave_mask);
     io_wait();
 
-    kprintf("pic enabled\n");
+    kprintf("pic setup\n");
 }
 
 // Disable the PIC
@@ -58,22 +58,25 @@ void pic_eoi(uint8_t irq) {
 
     outportb(PIC_CMD_1, PIC_EOI);
     io_wait();
-
-    kprintf("pic eoi sent\n");
 }
 
-// Return the I
+// Return the Interrupt Request Register
 uint16_t pic_get_irr() {
     outportb(PIC_CMD_1, PIC_READ_IRR);
     outportb(PIC_CMD_2, PIC_READ_IRR);
+
     io_wait();
+
     return (inportb(PIC_CMD_2) << 8) | inportb(PIC_CMD_1);
 }
 
+// Return the In-Service Register
 uint16_t pic_get_isr() {
     outportb(PIC_CMD_1, PIC_READ_ISR);
     outportb(PIC_CMD_2, PIC_READ_ISR);
+
     io_wait();
+
     return (inportb(PIC_CMD_2) << 8) | inportb(PIC_CMD_1);
 }
 

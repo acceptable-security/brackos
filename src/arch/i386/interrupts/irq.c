@@ -9,9 +9,7 @@
 
 extern void irq_common_stub();
 
-irq_handler_t* irq_handlers[] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-};
+irq_handler_t* irq_handlers[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, };
 
 void irq_send_eoi(uint16_t irq) {
     if ( apic_supported() && apic_is_enabled() ) {
@@ -25,8 +23,6 @@ void irq_send_eoi(uint16_t irq) {
 // Generic handler to pass control to the installed interrupt service routines.
 void irq_general_handler(idt_reg_stack_t* frame) {
     int irq = __builtin_ctz(pic_get_isr());
-
-    kprintf("servicing irq %d\n", irq);
 
     irq_handler_t* handler = irq_handlers[irq];
 
@@ -47,5 +43,5 @@ void irq_init() {
         idt_set_gate(i + 0x20, (uintptr_t) irq_common_stub, 0x08, 0x8E);
     }
 
-    kprintf("irq installed\n");
+    kprintf("irqs setup\n");
 }
