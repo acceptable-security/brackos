@@ -30,7 +30,7 @@ void idt_set_gate(unsigned int gate, uintptr_t address, uint16_t selector, uint8
 
 // Load the IDT
 void idt_load() {
-    idtp.length = (sizeof(idt_gate_t) * IDT_GATE_COUNT) - 1;
+    idtp.size = (sizeof(idt_gate_t) * IDT_GATE_COUNT) - 1;
     idtp.base = (uintptr_t) &gates;
 
     __asm__( "lidt %0" : : "g"(idtp) );

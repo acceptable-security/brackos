@@ -28,7 +28,7 @@ typedef struct {
 } __attribute__((packed)) idt_gate_t;
 
 typedef struct {
-    uint16_t length;
+    uint16_t size;
     uint32_t base;
 } __attribute__((packed)) idt_t;
 

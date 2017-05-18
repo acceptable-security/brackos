@@ -18,7 +18,6 @@ irq_common_stub:
 
     call irq_general_handler
 
-irq_load_state:
     pop gs
     pop fs
     pop es

@@ -17,7 +17,7 @@ extern unsigned long kernel_base;
 // Search memory for the RSDP signature
 rsdp_desc_t* rsdp_locate() {
     uintptr_t start = 0xC00E0000;
-    uintptr_t end = 0xC00FFFFF;
+    uintptr_t end   = 0xC00FFFFF;
 
     uint32_t sig1 = ACPI_SIGNATURE_RSDP1;
     uint32_t sig2 = ACPI_SIGNATURE_RSDP2;

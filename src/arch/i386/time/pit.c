@@ -20,6 +20,7 @@ void pit_handle_interrupt(idt_reg_stack_t* frame) {
 
 // Send command to the PIT
 void pit_cmd_send(pit_cmd_t data) {
+    // Cast the packed struct to an integer and send to PIT_CMD_CHAN
     outportb(PIT_CMD_CHAN, *(uint8_t*)(&data));
     io_wait();
 }
