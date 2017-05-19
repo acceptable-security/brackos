@@ -22,7 +22,9 @@ void irq_send_eoi(uint16_t irq) {
 
 // Generic handler to pass control to the installed interrupt service routines.
 void irq_general_handler(idt_reg_stack_t* frame) {
-    int irq = __builtin_ctz(pic_get_isr());
+    // Ignore the cascading bit
+    uint16_t isr = pic_get_isr() & ~(1 << 2);
+    int irq = __builtin_ctz(isr);
 
     irq_handler_t* handler = irq_handlers[irq];
 

@@ -62,8 +62,9 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     pit_init();
     ps2_init();
 
+    kprintf("enabling interrupts...");
     __asm__ volatile ("sti");
-    kprintf("interrupts enabled\n");
+    kprintf(" done\n");
 
     // memmap testing code:
     // void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);

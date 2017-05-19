@@ -22,7 +22,10 @@
 #define PS2_CMD_DISABLE_PORT1 0xAD // Disable the first PS/2 port
 #define PS2_CMD_ENABLE_PORT1  0xAE // Enable the first PS/2 port
 #define PS2_CMD_RESET_CPU     0xFE // Reset the CPU. For some reason...
-#define PS2_CMD_RESET_PORT    0xFF // Reset the port.
+
+#define PS2_DEV_IDENTIFY      0xF2 // Identify device
+#define PS2_DEV_DISABLE_SCAN  0xF5 // Disable scanning
+#define PS2_DEV_RESET_PORT    0xFF // Reset the port.
 
 // Bits in the PS/2 controller configuration byte.
 #define PS2_CONF_INT1   (1 << 0) // First PS/2 port interrupt. 1 if set.
