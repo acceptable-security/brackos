@@ -1,70 +1,13 @@
-// TODO - device independent I/O?
-// Device controller support for the 8042 PS/2 controller.
-#include <arch/i386/irq.h>
-#include <arch/i386/pic.h>
-#include <arch/i386/apic.h>
 #include <arch/i386/io.h>
-#include <drivers/scancodes.h>
 #include <drivers/ps2.h>
-#include <kprint.h>
-#include <stdbool.h>
-#include <stdint.h>
 
+#include <kprint.h>
+
+#include <stdint.h>
+#include <stdbool.h>
 
 bool ps2_first_device = true;   // Boolean for whether or not the first PS/2 port has a device present
 bool ps2_second_device = false; // Boolean for whether or not the second PS/2 port has a device present
-
-// Read the PS/2 controller status byte
-uint8_t ps2_read_status() {
-    return inportb(PS2_STAT_PORT);
-}
-
-// Wait for the PS/2 controller to be ready for writing
-void ps2_wait_output() {
-    while ( (ps2_read_status() & PS2_STAT_OUTPUT) == 0 );
-}
-
-// Wait for the PS/2 controller to be ready for reading
-void ps2_wait_input() {
-    while ( (ps2_read_status() & PS2_STAT_INPUT) != 0 );
-}
-
-// Read the PS/2 controller data byte
-uint8_t ps2_read_data() {
-    ps2_wait_output();
-    return inportb(PS2_DATA_PORT);
-}
-
-// Write data to the PS/2 data port.
-void ps2_write_data(uint8_t data) {
-    ps2_wait_input();
-    outportb(PS2_DATA_PORT, data);
-}
-
-// Write command to a PS/2 device
-uint8_t ps2_write_device_command(uint8_t port, uint8_t cmd) {
-    if ( port == 2 ) {
-        // Make sure to write to the data port and make sure the res is flushed.
-        ps2_write_data(PS2_CMD_WRITE_IN_PORT_2);
-        ps2_read_data();
-    }
-
-    ps2_write_data(cmd);
-
-    return ps2_read_data();
-}
-
-// Write a command to the PS/2 configuration port, and return data if necessary.
-uint8_t ps2_write_command(uint8_t command, uint8_t data, bool response) {
-    outportb(PS2_STAT_PORT, command);
-    io_wait();
-
-    if ( data ) {
-        ps2_write_data(data);
-    }
-
-    return response ? ps2_read_data() : 0;
-}
 
 // Read the controller configuration byte
 uint8_t ps2_read_configuration() {
@@ -78,6 +21,8 @@ void ps2_write_configuration(uint8_t byte) {
 
 // Enable/Disable the first or second device.
 void ps2_toggle_port(uint8_t port, bool toggle) {
+    ps2_flush_buffer();
+    
     if ( port == 1 ) {
         ps2_write_command(toggle ? PS2_CMD_ENABLE_PORT1 : PS2_CMD_DISABLE_PORT1, 0, false);
     }
@@ -93,6 +38,8 @@ bool ps2_self_test() {
 
 // Request the PS/2 controller to test the attached devices
 bool ps2_test_devices() {
+    ps2_flush_buffer();
+
     bool success = (ps2_write_command(PS2_CMD_TEST_PORT1, 0, true) == 0x00);
     ps2_first_device = success;
 
@@ -107,6 +54,8 @@ bool ps2_test_devices() {
 
 // Reset all enabled devices
 bool ps2_reset_devices() {
+    ps2_flush_buffer();
+
     uint8_t response, selftest;
     bool success;
 
@@ -115,14 +64,14 @@ bool ps2_reset_devices() {
         response = ps2_write_device_command(1, PS2_DEV_RESET_PORT);
         selftest = ps2_read_data();
 
-        success = (response == 0xFA && selftest == 0xAA);
+        success = (response == PS2_RES_OK && selftest == PS2_RES_TESTOK);
     }
 
     if ( ps2_second_device ) {
         response = ps2_write_device_command(2, PS2_DEV_RESET_PORT);
         selftest = ps2_read_data();
 
-        success = success || (response == 0xFA && selftest == 0xAA);
+        success = success || (response == PS2_RES_OK && selftest == PS2_RES_TESTOK);
     }
 
     return success;
@@ -130,12 +79,16 @@ bool ps2_reset_devices() {
 
 // Return the device type byte(s)
 uint16_t ps2_get_device_type(uint8_t port) {
-    if ( ps2_write_device_command(port, PS2_DEV_DISABLE_SCAN) != 0xFA ) {
-        return 0;
+    ps2_flush_buffer();
+
+    if ( ps2_write_device_command(port, PS2_DEV_DISABLE_SCAN) != PS2_RES_OK ) {
+        kprintf("ps/2 failed to disable scanning\n");
+        return 0xFF;
     }
 
-    if ( ps2_write_device_command(port, PS2_DEV_IDENTIFY) != 0xFA ) {
-        return 0;
+    if ( ps2_write_device_command(port, PS2_DEV_IDENTIFY) != PS2_RES_OK ) {
+        kprintf("ps/2 failed to identify\n");
+        return 0xFF;
     }
 
     uint16_t res = (uint16_t) ps2_read_data();
@@ -143,6 +96,8 @@ uint16_t ps2_get_device_type(uint8_t port) {
     if ( res == 0xAB ) {
         res = (res << 8) | (uint16_t)(ps2_read_data());
     }
+
+    kprintf("ps2 port %d: %x\n", port, res);
 
     return res;
 }
@@ -154,7 +109,7 @@ bool ps2_setup() {
     ps2_toggle_port(2, false);
 
     // Flush the device buffer
-    inportb(PS2_DATA_PORT);
+    ps2_flush_buffer();
 
     // Disable interrupts and keyboard translation.
     uint8_t conf = ps2_read_configuration();
@@ -198,12 +153,12 @@ bool ps2_setup() {
     }
 
     // Re-enable the devices
-    if ( ps2_first_device ) ps2_toggle_port(1, true);
+    if ( ps2_first_device )  ps2_toggle_port(1, true);
     if ( ps2_second_device ) ps2_toggle_port(2, true);
 
     // Enable the interrupts
     conf = ps2_read_configuration();
-    conf |= (ps2_first_device ? PS2_CONF_INT1 : 0);
+    conf |= (ps2_first_device  ? PS2_CONF_INT1 : 0);
     conf |= (ps2_second_device ? PS2_CONF_INT2 : 0);
     conf |= PS2_CONF_TRANSL;
     ps2_write_configuration(conf);
@@ -218,51 +173,41 @@ bool ps2_setup() {
     return true;
 }
 
-// Called whenever PS/2 keyboards throw an interrupt
-void ps2_kb_interrupt(idt_reg_stack_t* frame) {
-    uint8_t scancode = ps2_read_data();
-    bool down = !(scancode & 0x80);
-    scancode = scancode & ~0x80;
-
-    uint8_t ascii = kb_us[scancode];
-
-    if ( ascii > 0x7F ) {
-        // TODO
-    }
-    else {
-        // TODO
-    }
-}
-
-// Called whenever PS/2 mouse throw an interrupt
-void ps2_mouse_interrupt(idt_reg_stack_t* frame) {
-    uint8_t byte1 = ps2_read_data();
-    uint8_t byte2 = ps2_read_data();
-
-    // TODO again
-}
-
-// Initialize the PS/2 keyboard
-void ps2_init() {
-    if ( !ps2_setup() ) {
-        return;
-    }
+// Run the individual device setups
+bool ps2_setup_devices() {
+    bool success = true;
 
     if ( ps2_first_device ) {
-        kprintf("device 1: %x\n", ps2_get_device_type(1));
-    }
+        switch ( ps2_get_device_type(1) ) {
+            case PS2_TYPE_MF2_KB_TRANS1:
+            case PS2_TYPE_MF2_KB_TRANS2:
+            case PS2_TYPE_MF2_KB:
+                success = success && ps2_kb_setup(1);
+                break;
 
-    // TODO - don't assume, why is device 2 showing up as 0xAB 0x41???
-    if ( ps2_write_device_command(2, 0xF4) == 0xFA ) {
-        kprintf("enabled mouse\n");
+            case PS2_TYPE_MOUSE:
+            case PS2_TYPE_MOUSE_SCROLL:
+            case PS2_TYPE_MOUSE_5BTN:
+                success = success && ps2_mouse_setup(1);
+                break;
+        }
     }
 
     if ( ps2_second_device ) {
-        kprintf("device 2: %x\n", ps2_get_device_type(2));
+        switch ( ps2_get_device_type(2) ) {
+            case PS2_TYPE_MF2_KB_TRANS1:
+            case PS2_TYPE_MF2_KB_TRANS2:
+            case PS2_TYPE_MF2_KB:
+                success = success && ps2_kb_setup(2);
+                break;
+
+            case PS2_TYPE_MOUSE:
+            case PS2_TYPE_MOUSE_SCROLL:
+            case PS2_TYPE_MOUSE_5BTN:
+                success = success && ps2_mouse_setup(2);
+                break;
+        }
     }
 
-    irq_register(1, ps2_kb_interrupt);
-    irq_register(12, ps2_mouse_interrupt);
-
-    kprintf("ps/2 controller enabled.\n");
+    return success;
 }
