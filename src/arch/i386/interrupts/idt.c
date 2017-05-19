@@ -40,6 +40,8 @@ void idt_load() {
 // Create an initial empty IDT
 void idt_init() {
     for ( int i = 0; i < IDT_GATE_COUNT; i++ ) {
+        // 0x8E == 32bit Interrupt Flag.
+        // TODO - do actual flag ORs.
         idt_set_gate(i, (uintptr_t) idt_empty_entry, 0x08, 0x8E);
     }
 

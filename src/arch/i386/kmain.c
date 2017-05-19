@@ -10,6 +10,7 @@
 #include <arch/i386/irq.h>
 #include <arch/i386/pit.h>
 
+#include <drivers/ps2.h>
 #include <drivers/vga.h>
 
 #include <mem/frame.h>
@@ -47,6 +48,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     idt_init();
     idt_load();
 
+    // TODO - I/O APIC support
     if ( false /* apic_supported() */ ) {
         pic_disable();
         apic_enable();
@@ -58,6 +60,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     irq_init();
     nmi_init();
     pit_init();
+    ps2_init();
 
     __asm__ volatile ("sti");
     kprintf("interrupts enabled\n");
