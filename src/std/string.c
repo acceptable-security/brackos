@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 
 unsigned long strlen(const char* str) {
@@ -9,6 +10,22 @@ unsigned long strlen(const char* str) {
     }
 
     return i;
+}
+
+bool strcmp(const char* a, const char* b) {
+    int len = strlen(a);
+
+    if ( !a || !b || len != strlen(b) ) {
+        return false;
+    }
+
+    for ( int i = 0; i < len; i++ ) {
+        if ( a[i] != b[i] ) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void* memcpy(void* dest, const void* src, unsigned long count) {
