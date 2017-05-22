@@ -71,7 +71,7 @@ void* mem_cache_alloc(const char* name) {
 
     if ( cache->semi == NULL ) {
         if ( cache->empty == NULL ) {
-            // Create a new slab
+            // Allocate a new slab
             mem_slab_t* slab = (mem_slab_t*) memmap(NULL, SLAB_SIZE, MMAP_URGENT);
 
             if ( slab == NULL ) {
@@ -96,6 +96,9 @@ void* mem_cache_alloc(const char* name) {
                 end = (uintptr_t*) next;
             }
 
+            // Last object should be initialized to NULL
+            *end = 0;
+
             // Add the slab to the semi to be used.
             cache->semi = slab;
         }
@@ -112,17 +115,14 @@ void* mem_cache_alloc(const char* name) {
 
     mem_slab_t* slab = cache->semi;
 
-    // Get the next free object
+    // Get the next free object, and make the freelist head the next object.
     uintptr_t* object = slab->free_head;
-
-    // Get the next pointer to the head
     slab->free_head = *(uintptr_t**) object;
 
+    // When we're out of free objects, move the slab to the used list.
     if ( slab->free_head == NULL ) {
-        // Remove the slab from the semi list
         cache->semi = slab->next;
 
-        // Add it to the beginning of the used list
         slab->next = cache->full;
         cache->full = slab;
     }
