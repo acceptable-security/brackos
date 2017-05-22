@@ -84,9 +84,9 @@ void* mem_cache_alloc(const char* name) {
             unsigned int object_count = (SLAB_SIZE - sizeof(mem_slab_t)) / cache->object_size;
             uintptr_t* end = (uintptr_t*)(slab + 1);
 
-            slab->free_head = end; // Initialize the first free object pointer.
-
             // Initialize the freelist
+            slab->free_head = end;
+
             for ( int i = 0; i < object_count; i++ ) {
                 // Get the address of the next object and set the current free object to point to it
                 uintptr_t next = ((uintptr_t) end) + cache->object_size;
