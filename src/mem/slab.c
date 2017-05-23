@@ -8,7 +8,7 @@
 #define SLAB_CREATE_NEXT(NEXT, SLAB) (mem_slab_t*)((uintptr_t) slab | (uintptr_t) NEXT)
 
 // Create the cache_cache in the data section.
-mem_cache_t cache_cache = (mem_cache_t) {
+mem_cache_t cache_cache = {
     .next_cache = NULL,
 
     .name = "cache_cache",
@@ -157,15 +157,21 @@ void mem_cache_dealloc(const char* name, void* object) {
         return;
     }
 
+    // Locate the slab from the object
     mem_slab_t* slab = (mem_slab_t*) ((uintptr_t) object & ~0xFFF);
+
+    // Object counts from the next_slab bottom 12 bits.
     unsigned int free_count = 0;
     unsigned int total_count = SLAB_COUNT(slab->next_slab);
 
     uintptr_t* free_prev = NULL;
     uintptr_t* free_obj = slab->free_head;
 
+    // We go through the whole list - even once we insert the object - to get
     while ( free_obj != NULL ) {
+        // Have we not inserted the object yet and found a location suitable for object (we want to keep order)
         if ( object != NULL && (uintptr_t) object > (uintptr_t) free_obj ) {
+            // Insert the object here, or if there is no here at the head.
             if ( free_prev ) {
                 *free_prev = (uintptr_t) object;
             }
@@ -173,23 +179,27 @@ void mem_cache_dealloc(const char* name, void* object) {
                 slab->free_head = (uintptr_t*) object;
             }
 
+            // Set the current object to the object's next, and clear it so it isn't added again.
             *(uintptr_t*) object = (uintptr_t) free_obj;
             object = NULL;
         }
 
+        // Incremenet the count, and move forward in the list
         free_count++;
         free_prev = free_obj;
         free_obj = (uintptr_t*) *free_obj;
     }
 
+    // If we run off the end of the list we won't add, so add it at the end.
     if ( object ) {
         *free_prev = (uintptr_t) object;
     }
 
+    // Take into account the just added object.
     free_count++;
 
-    // Completely free.
+    // Move this party to the empty list
     if ( free_count == total_count ) {
-        // Add to empty list 
+
     }
 }
