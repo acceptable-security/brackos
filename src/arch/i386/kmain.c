@@ -14,6 +14,7 @@
 #include <drivers/vga.h>
 
 #include <mem/frame.h>
+#include <mem/slab.h>
 #include <mem/early.h>
 #include <mem/mmap.h>
 #include <mem/pool.h>
@@ -42,6 +43,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     frame_init();
     memmap_to_frames(multiboot);
     vasa_init((void*) 0xD0000000, (uintptr_t) page_table_base - 0xD0000000);
+    kmalloc_init();
 
     // acpi_init();
 
@@ -62,9 +64,11 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     pit_init();
     ps2_init();
 
-    kprintf("enabling interrupts...");
-    __asm__ volatile ("sti");
-    kprintf(" done\n");
+    // kprintf("enabling interrupts...");
+    // __asm__ volatile ("sti");
+    // kprintf(" done\n");
+
+
 
     // memmap testing code:
     // void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);

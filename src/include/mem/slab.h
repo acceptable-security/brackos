@@ -32,9 +32,18 @@ struct mem_cache_s {
     mem_callback_t* destruct;
 };
 
+typedef struct {
+    unsigned int size;
+    const char* name;
+} mem_kmalloc_block_t;
+
 mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, mem_callback_t* construct,
                                                                        mem_callback_t* destruct);
 void mem_cache_add(mem_cache_t* cache);
 
 void* mem_cache_alloc(const char* name);
 void mem_cache_dealloc(const char* name, void* object);
+
+void kmalloc_init();
+void* _kmalloc(unsigned int size);
+void _kfree(void* ptr);
