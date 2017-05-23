@@ -9,7 +9,7 @@ struct mem_slab_s;
 typedef struct mem_slab_s mem_slab_t;
 
 struct mem_slab_s {
-    mem_slab_t* next; // next slab
+    mem_slab_t* next_slab; // next slab, with the lower 12 bits representing object count of the current slab.
     uintptr_t* free_head; // free item
 };
 
@@ -17,7 +17,7 @@ struct mem_cache_s;
 typedef struct mem_cache_s mem_cache_t;
 
 struct mem_cache_s {
-    mem_cache_t* next;
+    mem_cache_t* next_cache;
 
     char name[CACHE_NAME_MAXLEN];
     unsigned int object_size;

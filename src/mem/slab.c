@@ -3,15 +3,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define SLAB_NEXT(SLAB) (mem_slab_t*)(((uintptr_t) (SLAB)->next_slab) & ~4095)
+#define SLAB_COUNT(SLAB) (((uintptr_t) (SLAB)->next_slab) & 4095)
+#define SLAB_CREATE_NEXT(NEXT, SLAB) (mem_slab_t*)((uintptr_t) slab | (uintptr_t) NEXT)
+
 // Create the cache_cache in the data section.
 mem_cache_t cache_cache = (mem_cache_t) {
-    .next = NULL,
+    .next_cache = NULL,
 
     .name = "cache_cache",
     .object_size = sizeof(mem_cache_t),
 
-    .full = NULL,
-    .semi = NULL,
+    .full  = NULL,
+    .semi  = NULL,
     .empty = NULL
 };
 
@@ -45,14 +49,15 @@ void mem_cache_add(mem_cache_t* cache) {
     mem_cache_t* head = &cache_cache;
 
     // Find the end of the list in head.
-    while ( head->next != NULL ) {
-        head = head->next;
+    while ( head->next_cache != NULL ) {
+        head = head->next_cache;
     }
 
-    head->next = cache;
-    cache->next = NULL;
+    head->next_cache = cache;
+    cache->next_cache = NULL;
 }
 
+// Allocate an object from a cache
 void* mem_cache_alloc(const char* name) {
     mem_cache_t* cache = &cache_cache;
 
@@ -62,7 +67,7 @@ void* mem_cache_alloc(const char* name) {
             break;
         }
 
-        cache = cache->next;
+        cache = cache->next_cache;
     }
 
     if ( cache == NULL ) {
@@ -78,14 +83,15 @@ void* mem_cache_alloc(const char* name) {
                 return NULL;
             }
 
-            slab->next = NULL;
-
             // Derive the object count and the end of the slab header
             unsigned int object_count = (SLAB_SIZE - sizeof(mem_slab_t)) / cache->object_size;
             uintptr_t* end = (uintptr_t*)(slab + 1);
 
             // Initialize the freelist
             slab->free_head = end;
+
+            // Set the next_slab to NULL with object count
+            slab->next_slab = SLAB_CREATE_NEXT(NULL, object_count);
 
             for ( int i = 0; i < object_count; i++ ) {
                 // Get the address of the next object and set the current free object to point to it
@@ -105,11 +111,11 @@ void* mem_cache_alloc(const char* name) {
         else {
             // Remove the cache from the empty
             mem_slab_t* slab = cache->empty;
-            cache->empty = slab->next;
+            cache->empty = SLAB_NEXT(slab->next_slab);
 
             // Add it the semi list
-            slab->next = NULL;
-            cache->semi = slab->next;
+            slab->next_slab = SLAB_CREATE_NEXT(NULL, SLAB_COUNT(slab));
+            cache->semi = SLAB_NEXT(slab->next_slab);
         }
     }
 
@@ -121,9 +127,9 @@ void* mem_cache_alloc(const char* name) {
 
     // When we're out of free objects, move the slab to the used list.
     if ( slab->free_head == NULL ) {
-        cache->semi = slab->next;
+        cache->semi = SLAB_NEXT(slab->next_slab);
 
-        slab->next = cache->full;
+        slab->next_slab = SLAB_CREATE_NEXT(cache->full, SLAB_COUNT(slab->next_slab));
         cache->full = slab;
     }
 
@@ -132,4 +138,58 @@ void* mem_cache_alloc(const char* name) {
     }
 
     return object;
+}
+
+// Deallocate an object from a cache
+void mem_cache_dealloc(const char* name, void* object) {
+    mem_cache_t* cache = &cache_cache;
+
+    // Find the cache
+    while ( cache != NULL ) {
+        if ( strcmp(cache->name, name) == 0 ) {
+            break;
+        }
+
+        cache = cache->next_cache;
+    }
+
+    if ( cache == NULL ) {
+        return;
+    }
+
+    mem_slab_t* slab = (mem_slab_t*) ((uintptr_t) object & ~0xFFF);
+    unsigned int free_count = 0;
+    unsigned int total_count = SLAB_COUNT(slab->next_slab);
+
+    uintptr_t* free_prev = NULL;
+    uintptr_t* free_obj = slab->free_head;
+
+    while ( free_obj != NULL ) {
+        if ( object != NULL && (uintptr_t) object > (uintptr_t) free_obj ) {
+            if ( free_prev ) {
+                *free_prev = (uintptr_t) object;
+            }
+            else {
+                slab->free_head = (uintptr_t*) object;
+            }
+
+            *(uintptr_t*) object = (uintptr_t) free_obj;
+            object = NULL;
+        }
+
+        free_count++;
+        free_prev = free_obj;
+        free_obj = (uintptr_t*) *free_obj;
+    }
+
+    if ( object ) {
+        *free_prev = (uintptr_t) object;
+    }
+
+    free_count++;
+
+    // Completely free.
+    if ( free_count == total_count ) {
+        // Add to empty list 
+    }
 }
