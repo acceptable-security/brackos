@@ -237,12 +237,15 @@ void mem_cache_dealloc(const char* name, void* object) {
 
     // Move this party to the empty list
     if ( free_count == total_count ) {
-
+        // TODO - Move into the empty list
+        // Cycle through the used list, find the slab before us, cut ourselves out, and put ourselves at the head of
+        // the free list.
     }
 }
 
 // Initialize the kmalloc caches
 void kmalloc_init() {
+    // Create a new cache for each kmalloc chunk
     for ( int i = 0; i < sizeof(kmalloc_sizes) / sizeof(mem_kmalloc_block_t); i++ ) {
         mem_cache_new(kmalloc_sizes[i].name, kmalloc_sizes[i].size, NULL, NULL);
     }
@@ -282,9 +285,11 @@ void* _kmalloc(unsigned int size) {
         return NULL;
     }
 
+    // Start with a NULL block
     mem_kmalloc_block_t block = { .size = 0, .name = "" };
 
     for ( int i = 0; i < sizeof(kmalloc_sizes) / sizeof(mem_kmalloc_block_t); i++ ) {
+        // Find the first size larger, then go one lower (aka largest size we can use)
         if ( kmalloc_sizes[i].size > size ) {
             if ( i == 0 ) {
                 block = kmalloc_sizes[0];
