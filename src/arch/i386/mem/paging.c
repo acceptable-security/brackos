@@ -3,25 +3,13 @@
 #include <mem/frame.h>
 #include <stdint.h>
 
-#define PAGE_TABLE_FLAGS(table, flags) ((page_table_t*)((uintptr_t)(table) | (flags)))
-#define PAGE_TABLE_TEST(table, flag) ((uintptr_t)(table) & flag)
+#define PAGE_NO_FLAGS(OBJ) (((uintptr_t) OBJ) & ~0xFFF)
+#define PAGE_GET_FLAGS(OBJ) (((uintptr_t) OBJ) & 0xFFF)
+#define PAGE_TABLE_FLAGS(TABLE, FLAGS) ((page_table_t*)((uintptr_t)(TABLE) | (FLAGS)))
+#define PAGE_TABLE_TEST(TABLE, FLAG) ((uintptr_t)(TABLE) & FLAG)
 
 page_directory_t* page_directory_table = (page_directory_t*) 0xFFFFF000;
 page_table_t* page_table_base = (page_table_t*) 0xFFC00000;
-
-// void paging_clone_table(page_table_t* source, page_table_t* target) {
-//     for ( int i = 0; i < 1024; i++ ) {
-//         if ( !IS_PAGE_EMPTY(source->entries[i]) ) {
-//             target->entries[i] = source->entries[i];
-//         }
-//     }
-// }
-//
-// void paging_clone_directory(page_directory_t* source, page_directory_t* target) {
-//     for ( int i = 0; i < 1024; i++ ) {
-//         paging_clone_table(&source->tables[i], &target->tables[i]);
-//     }
-// }
 
 void paging_print_page(uintptr_t dir) {
     if ( dir & PAGE_PRESENT ) {
@@ -47,6 +35,24 @@ void paging_print_page(uintptr_t dir) {
     }
     if ( dir & PAGE_GLOBAL ) {
         kprintf("global ");
+    }
+}
+
+void page_directory_copy(page_directory_t* dest, page_directory_t* src) {
+    for ( int dir_ent = 0; dir_ent < 1023; dir_ent++ ) {
+        if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
+            page_table_t* dst_table = (page_table_t*) frame_alloc(1);
+            dest->tables[dir_ent] = PAGE_TABLE_FLAGS(dst_table, PAGE_GET_FLAGS(src->tables[dir_ent]));
+
+            page_table_t* src_table = (page_table_t*) PAGE_NO_FLAGS(src->tables[dir_ent]);
+
+            for ( int tab_ent = 0; tab_ent < 1024; tab_ent++ ) {
+                dst_table->entries[tab_ent] = src_table->entries[tab_ent];
+            }
+        }
+        else {
+            dest->tables[dir_ent] = PAGE_TABLE_FLAGS(NULL, PAGE_GET_FLAGS(src->tables[dir_ent]));
+        }
     }
 }
 
@@ -123,8 +129,8 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
             // Already mapped at the same address
             return true;
         }
+
         // Don't remap the same page
-        // TODO - panic?
         kprintf("this page is already mapped\n");
         return false;
     }
@@ -152,7 +158,7 @@ bool paging_unmap(uintptr_t virt) {
 
     if ( table->entries[tab_ent].flags & PAGE_PRESENT ) {
         // Remove the page_present flag
-        table->entries[tab_ent].flags &= ~PAGE_PRESENT;
+        table->entries[tab_ent].flags &= (unsigned) ~PAGE_PRESENT;
     }
 
     unsigned int page_count = 0;
@@ -184,4 +190,8 @@ uintptr_t paging_find_physical(uintptr_t virt) {
     page_table_t* table = page_table_base + dir_ent;
     uintptr_t addr = *(uintptr_t*)&table->entries[tab_ent];
     return addr & ~0xFFF;
+}
+
+void paging_load_directory(page_directory_t* dir) {
+    __asm__ volatile("mov %%cr3, %%eax":"=a"(dir));
 }

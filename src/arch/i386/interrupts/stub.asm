@@ -1,4 +1,5 @@
 global irq_common_stub
+global irq_exit
 extern irq_general_handler
 
 irq_common_stub:
@@ -18,6 +19,8 @@ irq_common_stub:
 
     call irq_general_handler
 
+; This is used to handle interrupt cleanup but also preempting tasks.
+irq_exit:
     pop gs
     pop fs
     pop es

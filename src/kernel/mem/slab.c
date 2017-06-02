@@ -38,7 +38,8 @@ mem_kmalloc_block_t kmalloc_sizes[] = {
 };
 
 // Create a new cache
-mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, mem_callback_t* construct,
+mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, unsigned int min,
+                                                                       mem_callback_t* construct,
                                                                        mem_callback_t* destruct) {
     if ( strlen(name) >= CACHE_NAME_MAXLEN ) {
         kprintf("mem cache name to big!\n");
@@ -61,6 +62,7 @@ mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, mem_callb
     memcpy(cache->name, name, strlen(name) + 1);
 
     cache->object_size = object_size;
+    cache->min = min;
     cache->construct = construct;
     cache->destruct = destruct;
 
@@ -69,6 +71,12 @@ mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, mem_callb
     cache->empty = NULL;
 
     mem_cache_add(cache);
+
+    mem_slab_t* begin = mem_slab_new(cache);
+
+    if ( begin ) {
+        cache->empty = begin;
+    }
 
     return cache;
 }
@@ -86,6 +94,7 @@ void mem_cache_add(mem_cache_t* cache) {
     cache->next_cache = NULL;
 }
 
+// Allocate a new slab for a specific cache
 mem_slab_t* mem_slab_new(mem_cache_t* cache) {
     // Allocate a new slab
     mem_slab_t* slab = (mem_slab_t*) memmap(NULL, SLAB_SIZE, MMAP_URGENT);
@@ -119,6 +128,44 @@ mem_slab_t* mem_slab_new(mem_cache_t* cache) {
     return slab;
 }
 
+// Count the amount of free objects in a slab
+uint32_t mem_slab_free_count(mem_slab_t* slab) {
+    // Start at the head
+    uint32_t count = 0;
+    uintptr_t* object = slab->free_head;
+
+    // Count the free objects
+    while ( object != NULL ) {
+        count++;
+        object = *(uintptr_t**) object;
+    }
+
+    return count;
+}
+
+// Count the amount of free objects in a cache
+uint32_t mem_cache_free_count(mem_cache_t* cache) {
+    uint32_t count = 0;
+
+    // Count the semi list
+    mem_slab_t* head = cache->semi;
+
+    while ( head != NULL ) {
+        count += mem_slab_free_count(head);
+        head = SLAB_NEXT(head);
+    }
+
+    // Count empty list.
+    head = cache->empty;
+
+    while ( head != NULL ) {
+        count += SLAB_COUNT(head);
+        head = SLAB_NEXT(head);
+    }
+
+    return count;
+}
+
 // Allocate an object from a cache
 void* mem_cache_alloc(const char* name) {
     mem_cache_t* cache = &cache_cache;
@@ -139,6 +186,7 @@ void* mem_cache_alloc(const char* name) {
 
     if ( cache->semi == NULL ) {
         if ( cache->empty == NULL ) {
+            kprintf("allocating for semi... %s\n", name);
             mem_slab_t* slab = mem_slab_new(cache);
 
             if ( slab == NULL ) {
@@ -149,13 +197,14 @@ void* mem_cache_alloc(const char* name) {
             cache->semi = slab;
         }
         else {
+            kprintf("getting off of the empty... %s\n", name);
             // Remove the cache from the empty
             mem_slab_t* slab = cache->empty;
             cache->empty = SLAB_NEXT(slab);
 
             // Add it the semi list
             slab->next_slab = SLAB_CREATE_NEXT(NULL, SLAB_COUNT(slab));
-            cache->semi = SLAB_NEXT(slab);
+            cache->semi = slab;
         }
     }
 
@@ -176,6 +225,29 @@ void* mem_cache_alloc(const char* name) {
     if ( cache->construct ) {
         cache->construct((void*) object);
     }
+
+    // If there is a minimum to worry about, make sure we don't hit it.
+    if ( cache->min > 0 ) {
+        uint32_t free_count = mem_cache_free_count(cache);
+
+        kprintf("free_count: %d / %d\n", free_count, cache->min);
+
+        if ( free_count < cache->min ) {
+            kprintf("Hit the end empty list");
+
+            // If we did, allocate into the empty list. If it fails, don't worry.
+            mem_slab_t* slab = mem_slab_new(cache);
+
+            if ( slab != NULL ) {
+                slab->next_slab = SLAB_CREATE_NEXT(cache->empty, SLAB_COUNT(slab));
+                cache->empty = slab;
+                kprintf(", fixed it!");
+            }
+
+            kprintf("\n");
+        }
+    }
+
 
     return object;
 }
@@ -224,7 +296,7 @@ void mem_cache_dealloc(const char* name, void* object) {
             object = NULL;
         }
 
-        // Incremenet the count, and move forward in the list
+        // Increment the count, and move forward in the list
         free_count++;
         free_prev = free_obj;
         free_obj = (uintptr_t*) *free_obj;
@@ -247,7 +319,7 @@ void mem_cache_dealloc(const char* name, void* object) {
 void kmalloc_init() {
     // Create a new cache for each kmalloc chunk
     for ( int i = 0; i < sizeof(kmalloc_sizes) / sizeof(mem_kmalloc_block_t); i++ ) {
-        mem_cache_new(kmalloc_sizes[i].name, kmalloc_sizes[i].size, NULL, NULL);
+        mem_cache_new(kmalloc_sizes[i].name, kmalloc_sizes[i].size, 0, NULL, NULL);
     }
 }
 

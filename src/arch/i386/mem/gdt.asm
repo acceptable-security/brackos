@@ -1,14 +1,16 @@
 global gdt_init
+global our_gdt
+global tss_set
 section .text
 
 ; struct to represent the gdt entries
 struc gdt_entry
-    limit_low:      resw 1
-    base_low:       resw 1
-    base_middle:    resb 1
-    access:         resb 1
-    granularity:    resb 1
-    base_high:      resb 1
+    limit_low:      resw 1 ; 0, 1
+    base_low:       resw 1 ; 2, 3
+    base_middle:    resb 1 ; 4
+    access:         resb 1 ; 5
+    granularity:    resb 1 ; 6
+    base_high:      resb 1 ; 7
 endstruc
 
 ; struct to represent the gdt itself
@@ -31,14 +33,20 @@ endstruc
     iend
 %endmacro
 
-; our basic 3 gdt entries
 ; 1 - null entry
 ; 2 - kernel code segment
 ; 3 - kernel data segment
+; 4 - user code segment
+; 5 - user data segment
+; 6 - tss entry
 our_gdt_entries:
     create_gdt_entry 0, 0, 0, 0
     create_gdt_entry 0, 0xFFFFFFFF, 0x9A, 0xCF
     create_gdt_entry 0, 0xFFFFFFFF, 0x92, 0xCF
+    create_gdt_entry 0, 0xFFFFFFFF, 0xFA, 0xCF
+    create_gdt_entry 0, 0xFFFFFFFF, 0xF2, 0xCF
+tss_entry:
+    create_gdt_entry 0, 0x67,       0x89, 0xCF ; Empty descriptor for TSS
 our_gdt_size equ $ - our_gdt_entries - 1
 
 ; our actual gdt object
@@ -64,7 +72,58 @@ gdt_init:
     mov gs, ax
     mov ss, ax
     jmp 0x08:gdt_flush
-
 gdt_flush:
+    pop ebp
+    ret
+
+; Set TSS
+tss_set:
+    push ebp
+    mov ebp, esp
+
+    push eax
+    push ebx
+    push ecx
+
+    mov eax, [ebp + 8] ; Get the address off the stack
+
+    ; ECX contains the low limit
+    mov ecx, eax
+    and ecx, 0xFFFFF
+
+    ; EBX contains the middle byte
+    mov ebx, eax
+    shr ebx, 16
+    and ebx, 0xFF
+
+    ; EAX contains the high limit
+    shr eax, 24
+    and eax, 0xFF
+
+    mov word [tss_entry + 2], cx ; Load low limit
+    mov byte [tss_entry + 4], bl ; Load middle limit
+    mov byte [tss_entry + 7], al ; Load high limit
+
+    ; Reload GDT
+    lgdt [our_gdt]
+
+    ; Flush GDT
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    jmp 0x08:tss_gdt_flush
+tss_gdt_flush:
+
+    ; Load the actual TSS
+    mov ax, 0x28 ; 6th entry
+    ltr ax
+
+    pop ecx
+    pop ebx
+    pop eax
+
     pop ebp
     ret

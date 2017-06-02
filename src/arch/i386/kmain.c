@@ -9,6 +9,9 @@
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
 #include <arch/i386/pit.h>
+#include <kernel/clock.h>
+
+#include <arch/i386/tss.h>
 
 #include <drivers/ps2.h>
 #include <drivers/vga.h>
@@ -17,7 +20,6 @@
 #include <mem/slab.h>
 #include <mem/early.h>
 #include <mem/mmap.h>
-#include <mem/pool.h>
 #include <mem/vasa.h>
 
 #include <multiboot.h>
@@ -29,6 +31,7 @@ extern uintptr_t virtual_end;
 extern void* page_table_base;
 unsigned long kernel_base = 0xC0000000;
 
+
 void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, unsigned long initial_pd, unsigned long kernel_heap_start, unsigned long kernel_heap_size) {
     // for (;;){}
     if ( multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
@@ -36,16 +39,14 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
         for ( ;; ) {}
     }
 
-    vga_init();
     gdt_init();
+    vga_init();
 
     early_kmalloc_init((void*) kernel_heap_start, kernel_heap_size);
-    frame_init();
     memmap_to_frames(multiboot);
     vasa_init((void*) 0xD0000000, (uintptr_t) page_table_base - 0xD0000000);
-    kmalloc_init();
 
-    // acpi_init();
+    acpi_init();
 
     idt_init();
     idt_load();
@@ -62,19 +63,34 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     irq_init();
     nmi_init();
     pit_init();
-    ps2_init();
+    // ps2_init();
 
-    // kprintf("enabling interrupts...");
-    // __asm__ volatile ("sti");
-    // kprintf(" done\n");
+    kprintf("enabling interrupts...");
+    __asm__ volatile ("sti");
+    kprintf(" done\n");
 
+    // Initiate late stage memory
+    frame_init();
+    kmalloc_init();
+    kmem_swap();
 
+    tss_init();
+    clock_init();
+
+    for ( int i = 0; i < 256; i++ ) {
+        kprintf("%d: %p\n", i, kmalloc(5));
+    }
+
+    kprintf("\n");
+
+    frame_status();
 
     // memmap testing code:
     // void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);
-    // void* test2 = memmap(NULL, 4096, MMAP_RW | MMAP_URGENT);
+    void* test2 = memmap(NULL, 4096, MMAP_RW | MMAP_URGENT);
+    // memunmap(test2, 4096);
     //
-    // memunmap(test1, 4096 * 3);
+    // kprintf("%p ...?\n", test2);
     //
     // paging_print();
 
@@ -95,5 +111,5 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     // paging_unmap((void*) 0x20000000);
     // paging_print();
 
-    for ( ;; ) __asm__ ("hlt");
+    for ( ;; ) {}
 }

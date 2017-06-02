@@ -48,3 +48,13 @@ void* memset(void* dest, unsigned char c, unsigned int count) {
 
     return dest;
 }
+
+void* memsetw(void* dest, unsigned short c, unsigned int count) {
+    unsigned short* _dest = (unsigned short*) dest;
+
+    for ( int i = 0; i < count; i++ ) {
+        _dest[i] = c;
+    }
+
+    return dest;
+}

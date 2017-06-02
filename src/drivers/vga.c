@@ -37,6 +37,21 @@ void vga_setchar(char c, char color, int x, int y) {
     terminal_buffer[y * VGA_WIDTH + x] = vga_entry(c, color);
 }
 
+void vga_scroll() {
+    if ( terminal_row >= VGA_HEIGHT ) {
+        uint32_t temp = terminal_row - VGA_HEIGHT + 1;
+
+        // Move buffer up
+        memcpy(terminal_buffer, terminal_buffer + temp * VGA_WIDTH, (VGA_HEIGHT - temp) * VGA_WIDTH * 2);
+
+        // Clear last line
+        memsetw(terminal_buffer + (VGA_HEIGHT - temp) * VGA_WIDTH, vga_entry(' ', terminal_color), VGA_WIDTH);
+
+        // Fix pointer
+        terminal_row = VGA_HEIGHT - 1;
+    }
+}
+
 void vga_putchar(char c) {
     if ( c != '\n' ) {
         vga_setchar(c, terminal_color, terminal_column, terminal_row);
@@ -47,12 +62,9 @@ void vga_putchar(char c) {
     if ( terminal_column == VGA_WIDTH || c == '\n' ) {
         terminal_row++;
         terminal_column = 0;
-
-        if ( terminal_row == VGA_HEIGHT ) {
-            // TODO - scroll
-            terminal_row = 0;
-        }
     }
+
+    vga_scroll();
 }
 
 void vga_write(const char* data, int size) {

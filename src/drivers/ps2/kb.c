@@ -11,7 +11,7 @@
 // TODO - make this work
 
 // Called whenever PS/2 keyboards throw an interrupt
-void ps2_kb_interrupt(idt_reg_stack_t* frame) {
+void ps2_kb_interrupt(irq_regs_t* frame) {
     uint8_t scancode = ps2_read_data();
     bool down = !(scancode & 0x80);
     scancode = scancode & ~0x80;
@@ -23,7 +23,7 @@ void ps2_kb_interrupt(idt_reg_stack_t* frame) {
     }
     else {
         // TODO
-        // if ( down ) kprintf("%c", ascii);
+        if ( down ) kprintf("%c", ascii);
     }
 
     ps2_flush_buffer();

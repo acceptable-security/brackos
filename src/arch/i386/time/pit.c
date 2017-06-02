@@ -1,6 +1,7 @@
 #include <arch/i386/io.h>
 #include <arch/i386/irq.h>
 #include <arch/i386/pit.h>
+#include <kernel/clock.h>
 #include <kprint.h>
 #include <stdint.h>
 uint32_t sleep_counter; // TODO - no concurrency support!! Replace soon...?
@@ -10,7 +11,9 @@ uint32_t sleep_counter; // TODO - no concurrency support!! Replace soon...?
 uint32_t ms_per_tick;
 
 // Called every IRQ 0
-void pit_handle_interrupt(idt_reg_stack_t* frame) {
+void pit_handle_interrupt(irq_regs_t* frame) {
+    clock_advance(ms_per_tick);
+
     if ( sleep_counter > 0 ) {
         sleep_counter--;
     }

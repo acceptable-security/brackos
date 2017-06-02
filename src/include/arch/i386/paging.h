@@ -30,8 +30,8 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags);
 
 uintptr_t paging_find_physical(uintptr_t virt);
 
-void paging_clone_table(page_table_t* source, page_table_t* target);
 void paging_clone_directory(page_directory_t* source, page_directory_t* target);
+void paging_load_directory(page_directory_t* dir);
 
 void paging_init(page_directory_t* initial_pd);
 void paging_print();

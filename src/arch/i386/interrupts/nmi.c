@@ -2,7 +2,7 @@
 #include <kprint.h>
 #include <stdint.h>
 
-void nmi_handle(idt_reg_stack_t* frame, uint32_t error) {
+void nmi_handle(irq_regs_t* frame, uint32_t error) {
     kprintf("ohno! %d\n", error);
     __asm__ ("cli; hlt");
 }

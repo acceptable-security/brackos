@@ -33,11 +33,15 @@ typedef struct {
 } __attribute__((packed)) idt_t;
 
 typedef struct {
-    unsigned int gs, fs, es, ds;
-    unsigned int edi, esi, ebp, esp, ebx, edx, ecx, eax;
-    unsigned int int_no, err_code;
-    unsigned int eip, cs, eflags, useresp, ss;
-} idt_reg_stack_t;
+    uint16_t gs, fs, es, ds;
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+    uint32_t int_no, err_code;
+    uintptr_t frame_pointer;
+    uint32_t eip;
+    uint16_t cs;
+    uint32_t eflags, useresp;
+    uint16_t ss;
+} __attribute__((packed)) irq_regs_t;
 
 
 void idt_set_gate(unsigned int gate, uintptr_t address, uint16_t selector, uint8_t gate_type);

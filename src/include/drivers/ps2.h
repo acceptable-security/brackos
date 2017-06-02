@@ -114,10 +114,10 @@ uint16_t ps2_get_device_type(uint8_t port);
 bool ps2_setup();
 bool ps2_setup_devices();
 
-void ps2_kb_interrupt(idt_reg_stack_t* frame);
+void ps2_kb_interrupt(irq_regs_t* frame);
 bool ps2_kb_setup(uint8_t port);
 
-void ps2_mouse_interrupt(idt_reg_stack_t* frame);
+void ps2_mouse_interrupt(irq_regs_t* frame);
 bool ps2_mouse_setup(uint8_t port);
 
 void ps2_init();

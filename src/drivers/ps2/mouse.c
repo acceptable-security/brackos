@@ -4,7 +4,7 @@
 #include <kprint.h>
 
 // Called whenever PS/2 mouse throw an interrupt
-void ps2_mouse_interrupt(idt_reg_stack_t* frame) {
+void ps2_mouse_interrupt(irq_regs_t* frame) {
     bool left, center, right;
 
     uint8_t state = ps2_read_data();
@@ -15,10 +15,11 @@ void ps2_mouse_interrupt(idt_reg_stack_t* frame) {
     center = state & PS2_MOUSE_CENTER;
     right = state & PS2_MOUSE_RIGHT;
 
-    uint16_t delta_x = xm + ((state >> 6) & 1);
+    // Im 99% sure this is completely incorrect maths.
+    int16_t delta_x = xm + ((state >> 6) & 1);
     delta_x = (state & PS2_MOUSE_SIGN_X) ? -delta_x : delta_x;
 
-    uint16_t delta_y = ym + ((state >> 7) & 1);
+    int16_t delta_y = ym + ((state >> 7) & 1);
     delta_y = (state & PS2_MOUSE_SIGN_Y) ? -delta_y : delta_y;
 
     if ( left ) kprintf("left ");

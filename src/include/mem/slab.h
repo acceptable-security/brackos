@@ -21,6 +21,7 @@ struct mem_cache_s {
 
     char name[CACHE_NAME_MAXLEN];
     unsigned int object_size;
+    unsigned int min;
 
     // slab lists
     mem_slab_t* full;  // Completely used
@@ -37,9 +38,11 @@ typedef struct {
     const char* name;
 } mem_kmalloc_block_t;
 
-mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, mem_callback_t* construct,
+mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, unsigned int minimum,
+                                                                       mem_callback_t* construct,
                                                                        mem_callback_t* destruct);
 void mem_cache_add(mem_cache_t* cache);
+mem_slab_t* mem_slab_new(mem_cache_t* cache);
 
 void* mem_cache_alloc(const char* name);
 void mem_cache_dealloc(const char* name, void* object);

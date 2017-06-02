@@ -1,17 +1,37 @@
 #include <mem/frame.h>
 #include <mem/kmalloc.h>
+#include <mem/slab.h>
 
 #include <kprint.h>
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
 
-frame_alloc_t* buddy_alloc;
+frame_alloc_t buddy_alloc;
+bool cache_init = false;
+
+frame_node_t* frame_node_alloc() {
+    if ( cache_init == false ) {
+        return kmalloc(sizeof(frame_node_t));
+    }
+    else {
+        return mem_cache_alloc("cache_pfa_node");
+    }
+}
+
+void frame_node_free(frame_node_t* node) {
+    if ( !cache_init ) {
+        kfree(node);
+    }
+    else {
+        mem_cache_dealloc("cache_pfa_node", node);
+    }
+}
 
 // Determines whether or not a and b are buddies of size size.
 bool frame_buddy_check(uintptr_t a, uintptr_t b, size_t size) {
-    uintptr_t lower = min(a, b) - buddy_alloc->base;
-    uintptr_t upper = max(a, b) - buddy_alloc->base;
+    uintptr_t lower = min(a, b) - buddy_alloc.base;
+    uintptr_t upper = max(a, b) - buddy_alloc.base;
 
     // Calculate upper from lower and check.
     return (lower + size) == upper;
@@ -20,12 +40,12 @@ bool frame_buddy_check(uintptr_t a, uintptr_t b, size_t size) {
 // Add a free chunk into a certain free list
 void frame_add_free_item(uintptr_t address, size_t count, bool new_item) {
     if ( count > MAX_FRAMES ) {
-        kprintf("%d > %d\n", count, MAX_FRAMES);
+        kprintf("%d > %d (max frames)\n", count, MAX_FRAMES);
         return;
     }
 
 
-    frame_node_t* head = buddy_alloc->free_lists[count - 1];
+    frame_node_t* head = buddy_alloc.free_lists[count - 1];
 
     if ( !new_item && head != 0) {
         // Old address with a nonempty list, lets find some buddies!
@@ -41,17 +61,17 @@ void frame_add_free_item(uintptr_t address, size_t count, bool new_item) {
                     prev->next = head->next;
                 }
                 else {
-                    buddy_alloc->free_lists[count - 1] = head->next;
+                    buddy_alloc.free_lists[count - 1] = head->next;
                 }
 
-                kfree(head);
+                frame_node_free(head);
                 frame_add_free_item(min(head->address, address), count + 1, false);
                 return;
             }
 
             if ( head->next == 0 ) {
                 // We reached the end of the list, add it here.
-                frame_node_t* next = kmalloc(sizeof(frame_node_t));
+                frame_node_t* next = frame_node_alloc();
 
                 next->address = address;
                 next->next = 0;
@@ -66,11 +86,11 @@ void frame_add_free_item(uintptr_t address, size_t count, bool new_item) {
     }
     else {
         // Fresh address, push to the head.
-        frame_node_t* next = kmalloc(sizeof(frame_node_t));
+        frame_node_t* next = frame_node_alloc();
 
         next->address = address;
         next->next = head;
-        buddy_alloc->free_lists[count - 1] = next;
+        buddy_alloc.free_lists[count - 1] = next;
     }
 }
 
@@ -83,11 +103,11 @@ void* frame_alloc(size_t want_count) {
 
     // Find the smallest frame count with space
     for ( int count = want_count; count <= MAX_FRAMES; count++ ) {
-        if ( buddy_alloc->free_lists[count - 1] != NULL ) {
+        if ( buddy_alloc.free_lists[count - 1] != NULL ) {
             // Pop the head
-            frame_node_t* next = buddy_alloc->free_lists[count - 1];
+            frame_node_t* next = buddy_alloc.free_lists[count - 1];
             uintptr_t address = next->address;
-            buddy_alloc->free_lists[count - 1] = next->next;
+            buddy_alloc.free_lists[count - 1] = next->next;
 
             // Try to return it's buddies
             uintptr_t chunk_end = address + (want_count * PAGE_SIZE);
@@ -117,15 +137,20 @@ void frame_dealloc(void* address, size_t count) {
 void frame_status() {
     for ( int count = 0; count < MAX_FRAMES; count++ ) {
 
-        frame_node_t* head = buddy_alloc->free_lists[count];
+        frame_node_t* head = buddy_alloc.free_lists[count];
+
+        kprintf("Budy Size %d: ", count);
 
         if ( head != 0 ) {
-            kprintf("Count %d\n", count + 1);
+            kprintf("full\n");
 
             // while ( head != 0 ) {
             //     kprintf("| %p\n", head->address);
             //     head = head->next;
             // }
+        }
+        else {
+            kprintf("empty\n");
         }
     }
 }
@@ -138,7 +163,7 @@ void frame_add_chunk(uintptr_t address, size_t size) {
     }
 
     // TODO - not this
-    buddy_alloc->base = address;
+    buddy_alloc.base = address;
 
     // Carve out as many chunks of space as possible.
     while ( size >= PAGE_SIZE ) {
@@ -159,9 +184,10 @@ void frame_add_chunk(uintptr_t address, size_t size) {
 
 // Initialize a buddy allocator
 void frame_init() {
-    // Allocate a header.
-    buddy_alloc = (frame_alloc_t*) kmalloc(sizeof(frame_alloc_t));
+    // Initiate the PFA node cache
+    if ( mem_cache_new("cache_pfa_node", sizeof(frame_node_t), MAX_FRAMES + 1, NULL, NULL) != NULL ) {
+        cache_init = true;
 
-    // Setup the header
-    memset(buddy_alloc, 0, sizeof(frame_alloc_t));
+        kprintf("initiated the cache_pfa_node: %d\n", cache_init);
+    }
 }
