@@ -1,14 +1,18 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <kprint.h>
 
 uintptr_t early_memory_base = 0;
 uintptr_t early_memory_end = 0;
 
-// no early kfree. any early kmallocs should be *necessary* structures only.
+
+// Returns whether or not early kmalloc is still active.
+bool early_kmalloc_active() {
+    return early_memory_base != 0;
+}
 
 void* early_kmalloc(unsigned long size) {
-    // Make usre we aren't done with early kmallocs/they've been setup
-    if ( early_memory_base == 0 ) {
+    if ( !early_kmalloc_active() ) {
         return (void*) 0;
     }
 

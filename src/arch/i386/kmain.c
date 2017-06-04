@@ -14,6 +14,7 @@
 #include <arch/i386/tss.h>
 
 #include <drivers/ps2.h>
+#include <drivers/rs232.h>
 #include <drivers/vga.h>
 
 #include <mem/frame.h>
@@ -40,6 +41,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     }
 
     gdt_init();
+    rs232_init();
     vga_init();
 
     early_kmalloc_init((void*) kernel_heap_start, kernel_heap_size);
@@ -72,12 +74,13 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     // Initiate late stage memory
     frame_init();
     kmalloc_init();
+    vasa_switch();
     kmem_swap();
 
     tss_init();
     clock_init();
 
-    for ( int i = 0; i < 256; i++ ) {
+    for ( int i = 0; i < 300; i++ ) {
         kprintf("%d: %p\n", i, kmalloc(5));
     }
 
@@ -87,7 +90,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
 
     // memmap testing code:
     // void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);
-    void* test2 = memmap(NULL, 4096, MMAP_RW | MMAP_URGENT);
+    // void* test2 = memmap(NULL, 4096, MMAP_RW | MMAP_URGENT);
     // memunmap(test2, 4096);
     //
     // kprintf("%p ...?\n", test2);

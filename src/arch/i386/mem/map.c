@@ -25,9 +25,9 @@ void print_mem_map(void* _multiboot) {
         multiboot_memory_map_t* entry = (multiboot_memory_map_t*) base;
 
         kprintf("%x | %x | %s (%m)\n", entry->addr_low,
-                                  entry->addr_low + entry->len_low - 1,
-                                  MEM_TYPE(entry->type),
-                                  entry->len_low);
+                                       entry->addr_low + entry->len_low - 1,
+                                       MEM_TYPE(entry->type),
+                                       entry->len_low);
     }
 }
 

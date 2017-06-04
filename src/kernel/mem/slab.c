@@ -186,7 +186,6 @@ void* mem_cache_alloc(const char* name) {
 
     if ( cache->semi == NULL ) {
         if ( cache->empty == NULL ) {
-            kprintf("allocating for semi... %s\n", name);
             mem_slab_t* slab = mem_slab_new(cache);
 
             if ( slab == NULL ) {
@@ -197,7 +196,6 @@ void* mem_cache_alloc(const char* name) {
             cache->semi = slab;
         }
         else {
-            kprintf("getting off of the empty... %s\n", name);
             // Remove the cache from the empty
             mem_slab_t* slab = cache->empty;
             cache->empty = SLAB_NEXT(slab);
@@ -230,10 +228,7 @@ void* mem_cache_alloc(const char* name) {
     if ( cache->min > 0 ) {
         uint32_t free_count = mem_cache_free_count(cache);
 
-        kprintf("free_count: %d / %d\n", free_count, cache->min);
-
         if ( free_count < cache->min ) {
-            kprintf("Hit the end empty list");
 
             // If we did, allocate into the empty list. If it fails, don't worry.
             mem_slab_t* slab = mem_slab_new(cache);
@@ -241,10 +236,7 @@ void* mem_cache_alloc(const char* name) {
             if ( slab != NULL ) {
                 slab->next_slab = SLAB_CREATE_NEXT(cache->empty, SLAB_COUNT(slab));
                 cache->empty = slab;
-                kprintf(", fixed it!");
             }
-
-            kprintf("\n");
         }
     }
 

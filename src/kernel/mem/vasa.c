@@ -1,5 +1,6 @@
 // Virtual Address Space Allocator.
-
+#include <mem/early.h>
+#include <mem/slab.h>
 #include <mem/vasa.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -26,6 +27,16 @@ void vasa_merge_node(vasa_node_t* a, vasa_node_t* b) {
     a->base = min(a->base, b->base);
     a->length += b->length;
     kfree(b);
+}
+
+// Allocates a single vasa_node_t
+vasa_node_t* vasa_node_alloc() {
+    if ( early_kmalloc_active() ) {
+        return (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
+    }
+    else {
+        return mem_cache_alloc("cache_vasa");
+    }
 }
 
 // Add a node to the linked lists.
@@ -155,14 +166,14 @@ bool vasa_mark(uintptr_t base, unsigned long length, bool used, unsigned long fl
                 // leave it in it's current position as it's correct
 
                 // put AB onto the other side
-                vasa_node_t* be_node = (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
+                vasa_node_t* be_node = vasa_node_alloc();
                 be_node->base = (void*) base;
                 be_node->length = length;
                 be_node->flags = flags;
                 vasa_add_node(be_node, used);
 
                 // allocate b - e and keep on this side
-                vasa_node_t* end_node = (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
+                vasa_node_t* end_node = vasa_node_alloc();
                 end_node->base = (void*) end;
                 end_node->length = their_end - end;
                 end_node->flags = head->flags;
@@ -286,7 +297,7 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
                 head->length -= size;
                 head->base += size;
 
-                node = kmalloc(sizeof(vasa_node_t));
+                node = vasa_node_alloc();
             }
             else {
                 // If all space is used up, free the node.
@@ -316,11 +327,18 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
 
 // The VASA system will take up from the end of the kernel to the start of the page_table_base
 void vasa_init(void* start, unsigned long length) {
-    vasa_node_t* type_head = (vasa_node_t*) kmalloc(sizeof(vasa_node_t));
+    vasa_node_t* type_head = vasa_node_alloc();
     type_head->next = NULL;
     type_head->base = start;
     type_head->length = length;
 
     global_asa.free_head = type_head;
     global_asa.used_head = NULL;
+}
+
+// Switch the VASA to using a cache
+void vasa_switch() {
+    if ( mem_cache_new("cache_vasa", sizeof(vasa_node_t), 1, NULL, NULL) != NULL ) {
+        kprintf("initiated the cache_vasa\n");
+    }
 }

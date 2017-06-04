@@ -1,3 +1,4 @@
+#include <drivers/rs232.h>
 #include <drivers/vga.h>
 
 #include <kprint.h>
@@ -8,6 +9,7 @@ void kputch(char c) {
     // TODO - handle new lines, line wrapping, etc.
     // TODO - have an actual tty system ;)
     vga_putchar(c);
+    rs232_write_single(RS232_PORT_COM1, c);
 }
 
 // Print out a hexidecimal encoded character. Options specify formatting.
