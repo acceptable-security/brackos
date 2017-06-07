@@ -13,7 +13,7 @@ typedef struct task_s task_t;
 #define TASK_STATE_SLEEP    2 // Currently waiting for something
 #define TASK_STATE_ZOMBIE   3 // Currently killed but not reaped
 
-#define TASK_STACK_SIZE 0x1000
+#define TASK_STACK_SIZE 4096
 #define MAX_TASKS (2 << 16) - 1
 
 typedef int32_t pid_t;
@@ -43,5 +43,6 @@ task_t* task_kernel_create(char* name, uintptr_t address);
 void task_schedule(task_t* task);
 void task_kill(pid_t pid);
 void task_dealloc(task_t* task);
+void task_init();
 
 #endif

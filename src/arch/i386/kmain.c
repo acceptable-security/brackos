@@ -12,6 +12,7 @@
 #include <kernel/clock.h>
 
 #include <arch/i386/tss.h>
+#include <arch/i386/task.h>
 
 #include <drivers/ps2.h>
 #include <drivers/rs232.h>
@@ -67,10 +68,6 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     pit_init();
     // ps2_init();
 
-    kprintf("enabling interrupts...");
-    __asm__ volatile ("sti");
-    kprintf(" done\n");
-
     // Initiate late stage memory
     frame_init();
     kmalloc_init();
@@ -80,13 +77,11 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     tss_init();
     clock_init();
 
-    for ( int i = 0; i < 300; i++ ) {
-        kprintf("%d: %p\n", i, kmalloc(5));
-    }
+    task_init();
 
-    kprintf("\n");
-
-    frame_status();
+    kprintf("enabling interrupts...");
+    __asm__ volatile ("sti");
+    kprintf(" done\n");
 
     // memmap testing code:
     // void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);

@@ -1,3 +1,6 @@
+#ifndef _PAGE_H
+#define _PAGE_H
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -35,3 +38,5 @@ void paging_load_directory(page_directory_t* dir);
 
 void paging_init(page_directory_t* initial_pd);
 void paging_print();
+
+#endif

@@ -2,6 +2,7 @@
 #include <arch/i386/tss.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <kprint.h>
 
 extern gdt_desc_t our_gdt;
@@ -28,14 +29,17 @@ void gdt_print() {
 }
 
 // Set the stack pointer and stack segment in the TSS
-void tss_update(uint32_t esp0, uint16_t ss0) {
+void tss_update(uint32_t esp0) {
     tss.esp0 = esp0;
-    tss.ss0 = ss0;
 }
 
 // Initialize the TSS
 void tss_init() {
-    tss_update(0, 0);
+    memset(&tss, 0, sizeof(tss_t));
+    tss.ss0 = 0x10;
+    tss.iopb_offset = sizeof(tss_t);
+
+    tss_update(0);
     tss_set((uint32_t) &tss);
 
     kprintf("tss setup\n");

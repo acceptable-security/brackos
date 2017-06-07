@@ -353,15 +353,9 @@ void* _kmalloc(unsigned int size) {
     mem_kmalloc_block_t block = { .size = 0, .name = "" };
 
     for ( int i = 0; i < sizeof(kmalloc_sizes) / sizeof(mem_kmalloc_block_t); i++ ) {
-        // Find the first size larger, then go one lower (aka largest size we can use)
-        if ( kmalloc_sizes[i].size > size ) {
-            if ( i == 0 ) {
-                block = kmalloc_sizes[0];
-            }
-            else {
-                block = kmalloc_sizes[i - 1];
-            }
-
+        // Find the first size we're less than and use that.
+        if ( size < kmalloc_sizes[i].size ) {
+            block = kmalloc_sizes[i];
             break;
         }
     }
@@ -369,6 +363,8 @@ void* _kmalloc(unsigned int size) {
     if ( block.size == 0 ) {
         return NULL;
     }
+
+    kprintf("alloc of %d so going to %d\n", size, block.size);
 
     return mem_cache_alloc(block.name);
 }

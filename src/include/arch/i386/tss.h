@@ -41,10 +41,9 @@ typedef struct {
     uint16_t gs;
     uint16_t reserved9;
     uint16_t ldtr;
-    uint16_t reserved10;
-    uint16_t reserved11;
     uint16_t iopb_offset;
+    uint16_t reserved10;
 } __attribute__((packed)) tss_t;
 
-void tss_update(uint32_t esp0, uint16_t ss0);
+void tss_update(uint32_t esp0);
 void tss_init();
