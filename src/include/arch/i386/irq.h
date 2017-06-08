@@ -9,4 +9,5 @@ void irq_init();
 void irq_register(uint8_t num, irq_handler_t* handler);
 bool irq_is_happening();
 irq_regs_t* irq_get_current_regs();
+void irq_regs_print(irq_regs_t* regs);
 void nmi_init();

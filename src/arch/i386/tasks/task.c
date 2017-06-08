@@ -101,8 +101,6 @@ task_t* task_kernel_create(char* name, uintptr_t address) {
     task->user_regs->esp = task->stack_top;
     task->user_regs->ds = task->user_regs->fs = task->user_regs->es = task->user_regs->fs = 0x10;
 
-    kprintf("task %s stack: %p\n", name, task->stack_bottom);
-
     return task;
 }
 
@@ -111,16 +109,13 @@ void task_schedule(task_t* task) {
     // Update tss
     tss_update(task->int_stack_top);
 
-    kprintf("task: updated tss, loading new stack... %s\n", task->name);
-    kprintf("task: setting\nesp: %p\neip to %p\n", task->stack_bottom, task->user_regs->eip);
-
     // Here it goes...
     __asm__ volatile("mov %0, %%esp;"   // Load the task stack
                      "mov $0x20, %%al;" // Send the EOI - TODO: do irq_send_eoi
                      "mov $0x20, %%dx;"
                      "outb %%al, %%dx;"
                      "jmp irq_exit;"    // Load the new registers
-    			     : :"r"(task->user_regs->esp));
+    			     : :"r"(task->user_regs));
 }
 
 // Attempts to set a task into the killed state.
@@ -190,15 +185,11 @@ void task_init() {
         kprintf("failed to make task A\n");
     }
 
-    kprintf("taskA: %p - %p\n", taskA, ((uintptr_t) taskA) + sizeof(task_t));
-
     task_t* taskB = task_kernel_create("B", (uintptr_t) __empty_task_2);
 
     if ( taskB == NULL ) {
         kprintf("failed to make task B\n");
     }
-
-    kprintf("taskB: %p - %p\n", taskB, ((uintptr_t) taskB) + sizeof(task_t));
 
     kprintf("task: priming the scheduler...\n");
     scheduler_init(taskA);

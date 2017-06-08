@@ -15,9 +15,12 @@ irq_common_stub:
     mov es, ax
     mov fs, ax
     mov gs, ax
-    mov eax, esp
 
+    ; Push the stack pointer with all those juicy registers.
+    mov eax, esp
+    push eax
     call irq_general_handler
+    pop eax
 
 ; This is used to handle interrupt cleanup but also preempting tasks.
 irq_exit:

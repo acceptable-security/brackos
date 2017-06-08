@@ -50,6 +50,18 @@ void irq_general_handler(irq_regs_t* frame) {
     irq_current_regs = NULL;
 }
 
+// Print the registers
+void irq_regs_print(irq_regs_t* regs) {
+    kprintf("EAX: %X\n", regs->eax);
+    kprintf("EBX: %X\n", regs->ebx);
+    kprintf("ECX: %X\n", regs->ecx);
+    kprintf("EDX: %X\n", regs->edx);
+    kprintf("ESi: %X\n", regs->esi);
+    kprintf("EDI: %X\n", regs->edi);
+    kprintf("\nStack: %X:%X\n", regs->ebp, regs->esp);
+    kprintf("EIP: %X\n", regs->eip);
+}
+
 // Register an IRQ handler
 void irq_register(uint8_t num, irq_handler_t* handler) {
     irq_handlers[num] = handler;
