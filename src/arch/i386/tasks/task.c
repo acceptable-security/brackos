@@ -16,6 +16,10 @@ void __empty_task_2() {
     while ( true ) kprintf("B");
 }
 
+void __empty_task_3() {
+    while ( true ) kprintf("C");
+}
+
 // Attempts to allocate a PID. On failure, returns -1.
 pid_t pid_find_empty() {
     for ( int i = 0; i < MAX_TASKS; i++ ) {
@@ -43,6 +47,7 @@ task_t* task_create(char* name) {
     // Initialize the parameters
     task->name = name;
     task->pid = pid_find_empty();
+    task->state = TASK_STATE_STARTED;
 
     // Failed to allocate a PID
     if ( task->pid < 0 ) {
@@ -191,9 +196,16 @@ void task_init() {
         kprintf("failed to make task B\n");
     }
 
+    task_t* taskC = task_kernel_create("C", (uintptr_t) __empty_task_3);
+
+    if ( taskC == NULL ) {
+        kprintf("failed to make task C\n");
+    }
+
     kprintf("task: priming the scheduler...\n");
     scheduler_init(taskA);
-    scheduler_add(taskB);
+    // scheduler_add(taskB);
+    // scheduler_add(taskC);
 
     kprintf("task setup\n");
 }

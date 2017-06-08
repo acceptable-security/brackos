@@ -18,7 +18,10 @@ void scheduler_advance() {
     current_task = current_task->next;
 
     // Don't bother wasting time
-    if ( current_task != previous_task ) {
+    if ( current_task != previous_task || current_task->state == TASK_STATE_STARTED ) {
+        // Set the task state to preempted
+        current_task->state = TASK_STATE_PREEMPT;
+
         if ( !first_run ) {
             // Save the old stack
             previous_task->user_regs = irq_get_current_regs();

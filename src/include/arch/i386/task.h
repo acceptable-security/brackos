@@ -12,6 +12,7 @@ typedef struct task_s task_t;
 #define TASK_STATE_RUNNNING 1 // Currently running
 #define TASK_STATE_SLEEP    2 // Currently waiting for something
 #define TASK_STATE_ZOMBIE   3 // Currently killed but not reaped
+#define TASK_STATE_STARTED  4 // Currently started but never runned
 
 #define TASK_STACK_SIZE 4096
 #define MAX_TASKS (2 << 16) - 1
