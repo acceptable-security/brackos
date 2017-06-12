@@ -364,8 +364,6 @@ void* _kmalloc(unsigned int size) {
         return NULL;
     }
 
-    kprintf("alloc of %d so going to %d\n", size, block.size);
-
     return mem_cache_alloc(block.name);
 }
 

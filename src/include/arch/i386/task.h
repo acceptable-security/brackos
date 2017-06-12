@@ -44,6 +44,6 @@ task_t* task_kernel_create(char* name, uintptr_t address);
 void task_schedule(task_t* task);
 void task_kill(pid_t pid);
 void task_dealloc(task_t* task);
-void task_init();
+void task_init(uintptr_t initial_task_fn);
 
 #endif

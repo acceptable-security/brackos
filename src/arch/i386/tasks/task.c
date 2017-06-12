@@ -8,18 +8,6 @@
 
 task_t* task_pid_table[MAX_TASKS];
 
-void __empty_task_1() {
-    while ( true ) kprintf("A");
-}
-
-void __empty_task_2() {
-    while ( true ) kprintf("B");
-}
-
-void __empty_task_3() {
-    while ( true ) kprintf("C");
-}
-
 // Attempts to allocate a PID. On failure, returns -1.
 pid_t pid_find_empty() {
     for ( int i = 0; i < MAX_TASKS; i++ ) {
@@ -179,33 +167,20 @@ void task_dealloc(task_t* task) {
 }
 
 // Initialize the tasking system.
-void task_init() {
+void task_init(uintptr_t initial_task_fn) {
     for ( int i = 0; i < MAX_TASKS; i++ ) {
         task_pid_table[i] = NULL;
     }
 
-    task_t* taskA = task_kernel_create("A", (uintptr_t) __empty_task_1);
+    task_t* initial_task = task_kernel_create("A", initial_task_fn);
 
-    if ( taskA == NULL ) {
-        kprintf("failed to make task A\n");
+    if ( initial_task == NULL ) {
+        kprintf("failed to make initial task\n");
     }
 
-    task_t* taskB = task_kernel_create("B", (uintptr_t) __empty_task_2);
-
-    if ( taskB == NULL ) {
-        kprintf("failed to make task B\n");
-    }
-
-    task_t* taskC = task_kernel_create("C", (uintptr_t) __empty_task_3);
-
-    if ( taskC == NULL ) {
-        kprintf("failed to make task C\n");
-    }
 
     kprintf("task: priming the scheduler...\n");
-    scheduler_init(taskA);
-    // scheduler_add(taskB);
-    // scheduler_add(taskC);
+    scheduler_init(initial_task);
 
     kprintf("task setup\n");
 }

@@ -33,6 +33,11 @@ extern uintptr_t virtual_end;
 extern void* page_table_base;
 unsigned long kernel_base = 0xC0000000;
 
+void late_kernel_main() {
+    kprintf("Hello from late main!");
+
+    for ( ;; ) {}
+}
 
 void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, unsigned long initial_pd, unsigned long kernel_heap_start, unsigned long kernel_heap_size) {
     // for (;;){}
@@ -49,7 +54,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     memmap_to_frames(multiboot);
     vasa_init((void*) 0xD0000000, (uintptr_t) page_table_base - 0xD0000000);
 
-    acpi_init();
+    // acpi_init();
 
     idt_init();
     idt_load();
@@ -77,7 +82,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     tss_init();
     clock_init();
 
-    task_init();
+    task_init((uintptr_t) late_kernel_main);
 
     kprintf("enabling interrupts...");
     __asm__ volatile ("sti");

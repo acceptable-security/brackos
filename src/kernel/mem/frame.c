@@ -188,6 +188,6 @@ void frame_init() {
     if ( mem_cache_new("cache_pfa_node", sizeof(frame_node_t), MAX_FRAMES + 1, NULL, NULL) != NULL ) {
         cache_init = true;
 
-        kprintf("initiated the cache_pfa_node: %d\n", cache_init);
+        kprintf("initiated the cache_pfa_node\n");
     }
 }
