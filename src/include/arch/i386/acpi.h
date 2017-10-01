@@ -174,6 +174,22 @@ typedef struct {
 } __attribute__((packed)) acpi_madt_local_sapic_t;
 
 typedef struct {
+    acpi_sdt_t table;
+    uint8_t hardware_rev_id;
+
+    uint8_t comparator_count : 5;
+    uint8_t counter_size : 1;
+    uint8_t reserved : 1;
+    uint8_t legacy_replacement : 1;
+
+    uint16_t pci_vendor_id;
+    gas_t address;
+    uint8_t number;
+    uint16_t minimum_tick;
+    uint8_t page_protection;
+} __attribute__((packed)) acpi_hpet_t;
+
+typedef struct {
     uint8_t sig[8];
     uint8_t checksum;
     uint8_t oem[6];

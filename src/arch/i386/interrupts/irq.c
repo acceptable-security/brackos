@@ -17,8 +17,8 @@ irq_handler_t* irq_handlers[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 void irq_send_eoi(uint16_t irq) {
     // Send appropriate EOI
-    if ( apic_supported() && apic_is_enabled() ) {
-        apic_eoi();
+    if ( apic_supported() && lapic_is_enabled() ) {
+        lapic_eoi();
     }
     else {
         pic_eoi(irq);

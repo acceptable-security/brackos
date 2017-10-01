@@ -1,4 +1,5 @@
 #include <arch/i386/acpi.h>
+#include <arch/i386/apic.h>
 #include <arch/i386/paging.h>
 #include <arch/i386/io.h>
 #include <mem/vasa.h>
@@ -80,7 +81,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                     break;
                 }
 
-                kprintf("found processor #%d (%x)\n", lapic->processor_id, lapic->flags);
+                kprintf("found processor #%d (0x%x)\n", lapic->processor_id, lapic->flags);
                 records_head += lapic->length;
                 break;
             }
@@ -95,6 +96,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 }
 
                 kprintf("found ioapic %d\n", ioapic->id);
+                ioapic_setup(ioapic->address);
                 records_head += ioapic->length;
                 break;
             }
@@ -214,6 +216,7 @@ void acpi_parse_fadt(acpi_fadt_t* fadt) {
         if ( res == 0 ) {
             outportb(fadt->smi_cmd_port, fadt->acpi_enable);
 
+            // Wait a good second.
             for ( int i = 0; i < 100000; i++){}
 
             while ( (inportw(fadt->pm1a_ctrl_block) & 1) == 0 ) {
@@ -253,6 +256,11 @@ bool acpi_parse_rsdt(acpi_rsdt_t* rsdt) {
     return true;
 }
 
+// Parse the High Precision Event Timer table
+void acpi_parse_hpet(acpi_hpet_t* hpet) {
+    kprintf("hpet #%d\n", hpet->number);
+}
+
 // Find the correct SDT parser based off of signature
 void acpi_parse_table(acpi_sdt_t* ptr) {
     uint32_t name = (ptr->signature[0] << 24) |
@@ -278,6 +286,7 @@ void acpi_parse_table(acpi_sdt_t* ptr) {
 
         case ACPI_SIGNATURE_HPET:
             kprintf("Found the High Precision Event Timer!\n");
+            acpi_parse_hpet((acpi_hpet_t*) ptr);
             break;
 
         default:

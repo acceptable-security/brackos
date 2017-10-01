@@ -24,7 +24,7 @@
 #define APIC_TIMER_CURRENT_COUNT     0x0390
 #define APIC_TIMER_DIVIDER           0x03E0
 
-uintptr_t apic_base;
+uintptr_t lapic_base;
 
 // Return bool if the APIC is supported
 bool apic_supported() {
@@ -40,49 +40,66 @@ bool apic_supported() {
 }
 
 // Set the physical address of the APIC
-void apic_set_base(uintptr_t apic) {
+void lapic_set_base(uintptr_t apic) {
     uint32_t eax = (apic & 0xfffff000) | IA32_APIC_BASE_MSR_ENABLE;
     cpu_set_msr(IA32_APIC_BASE_MSR, eax, 0);
 }
 
 // Return the physical address of the APIC
-uintptr_t apic_get_base() {
+uintptr_t lapic_get_base() {
     uint32_t eax, edx;
     cpu_get_msr(IA32_APIC_BASE_MSR, &eax, &edx);
     return (eax & 0xfffff000);
 }
 
-void apic_register_writel(unsigned long reg, uint32_t value) {
-    *(uint32_t*)(apic_base + reg) = value;
+// Write to an apic register
+void lapic_register_writel(unsigned long reg, uint32_t value) {
+    *(volatile uint32_t*)(lapic_base + reg) = value;
 }
 
-void apic_eoi() {
-    apic_register_writel(APIC_REG_END_OF_INTERRUPT, 0x00000000);
+// Read to an apic register
+uint32_t lapic_register_readl(unsigned long reg) {
+    return *(volatile uint32_t*)(lapic_base + reg);
 }
 
-bool apic_is_enabled() {
+// Send the End of Interrupt to the APIC
+void lapic_eoi() {
+    lapic_register_writel(APIC_REG_END_OF_INTERRUPT, 0x00000000);
+}
+
+// Determine if the APIC is enabled
+bool lapic_is_enabled() {
     return (inportb(0xF0) & 0x100);
 }
 
-void apic_enable() {
+void lapic_enable_spurious_interrupt() {
+    uint32_t data = lapic_register_readl(APIC_REG_SPURIOUS_INTERRUPT);
+    lapic_register_writel(APIC_REG_SPURIOUS_INTERRUPT, data | 0x100);
+}
+
+// Enable the APIc
+void lapic_enable() {
     // Hardware enable APIC
-    uintptr_t base = apic_get_base();
-    apic_set_base(base);
+    uintptr_t base = lapic_get_base();
+    lapic_set_base(base);
 
-    void* virt = vasa_alloc(MEM_PCI, 4096, 0);
+    uintptr_t virt = (uintptr_t) vasa_alloc(MEM_PCI, 4096, 0);
 
-    if ( virt == NULL ) {
+    if ( virt == 0 ) {
         return;
     }
 
-    if ( !paging_map((uintptr_t) base, (uintptr_t) virt, PAGE_PRESENT | PAGE_RW) ) {
+    if ( !paging_map(base, virt, PAGE_PRESENT | PAGE_RW) ) {
         return;
     }
 
-    apic_base = base;
+    // Virtual page + page offset
+    lapic_base = virt + (base & 0xFFFF);
 
-    // Enable bit 8 in the spurius interrupt vector to get interrupts
-    outportb(0xF0, inportb(0xF0) | 0x100);
+    lapic_register_writel(APIC_REG_TASK_PRIORITY, 0);
+    lapic_register_writel(APIC_REG_DESTINATION_FORMAT, 0xffffffff);
+    lapic_register_writel(APIC_REG_LOGICAL_DESTINATION, 0x01000000);
+    lapic_enable_spurious_interrupt();
 
-    kprintf("apic setup at %p.\n", apic_base);
+    kprintf("local apic setup at %p.\n", lapic_base);
 }
