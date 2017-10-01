@@ -43,6 +43,8 @@ typedef struct {
     uint32_t remote_irr       : 1;
     uint32_t trigger_mode     : 1;
     uint32_t mask             : 1;
+    uint32_t reserved1        : 32;
+    uint8_t reserved2         : 7;
     uint32_t destination      : 8;
 } __attribute__((packed)) ioapic_redirect_entry_t;
 
