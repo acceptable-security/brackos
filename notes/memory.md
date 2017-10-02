@@ -24,8 +24,7 @@ possible. Trying to get as many round number as possible :).
     0xC0100000          | Start of kernel memory (multiboot, text, rodata, data, bss)
     0xC0100000 + end    | End of preallocated kernel memory
                         | TODO
-    0xD0000000          | Start of kernel memory pool.
-    0xDA000000          | End of kernel memory pool Start of kernel heap.
+    0xD0000000          | Start of kernel heap.
     0xFFC00000          | End of kernel heap. Start of page tables from recursive page directory
     0xFFFFF000          | End of page tables and start of recursive page directory.
     --------------------+------------------------------------------------------------------------------------
