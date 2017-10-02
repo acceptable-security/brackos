@@ -1,5 +1,7 @@
 global irq_common_stub
+global irq_empty_stub
 global irq_exit
+
 extern irq_general_handler
 
 irq_common_stub:
@@ -30,3 +32,5 @@ irq_exit:
     pop ds
     popad
     iret
+
+irq_empty_stub: iret

@@ -72,9 +72,9 @@ bool lapic_is_enabled() {
     return (inportb(0xF0) & 0x100);
 }
 
-void lapic_enable_spurious_interrupt() {
-    uint32_t data = lapic_register_readl(APIC_REG_SPURIOUS_INTERRUPT);
-    lapic_register_writel(APIC_REG_SPURIOUS_INTERRUPT, data | 0x100);
+// Enable the spurious interrupt vector
+void lapic_enable_spurious_interrupt(uint8_t intr) {
+    lapic_register_writel(APIC_REG_SPURIOUS_INTERRUPT, intr | 0x100);
 }
 
 // Enable the APIc
@@ -96,10 +96,10 @@ void lapic_enable() {
     // Virtual page + page offset
     lapic_base = virt + (base & 0xFFFF);
 
-    lapic_register_writel(APIC_REG_TASK_PRIORITY, 0);
-    lapic_register_writel(APIC_REG_DESTINATION_FORMAT, 0xffffffff);
-    lapic_register_writel(APIC_REG_LOGICAL_DESTINATION, 0x01000000);
-    lapic_enable_spurious_interrupt();
+    lapic_register_writel(APIC_REG_TASK_PRIORITY, 0);                // Enable all interrupts
+    lapic_register_writel(APIC_REG_DESTINATION_FORMAT, 0xffffffff);  // Flat mode
+    lapic_register_writel(APIC_REG_LOGICAL_DESTINATION, 0x01000000); // CPU 1
+    lapic_enable_spurious_interrupt(0xFF);
 
     kprintf("local apic setup at %p.\n", lapic_base);
 }

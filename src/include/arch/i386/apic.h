@@ -17,3 +17,4 @@ uint32_t ioapic_get_id();
 uint32_t ioapic_get_version();
 uint32_t ioapic_get_irqs();
 void ioapic_setup(uintptr_t base);
+void ioapic_enable_irq(uint8_t irq);

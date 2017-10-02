@@ -92,6 +92,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
         kprintf("using the apic\n");
         pic_disable();
         lapic_enable();
+        ioapic_enable_irq(0);
     }
     else {
         kprintf("using the pic\n");

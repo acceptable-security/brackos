@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 extern void irq_common_stub();
+extern void irq_empty_stub();
 
 irq_regs_t* irq_current_regs;
 bool irq_happening = false;
@@ -79,9 +80,12 @@ irq_regs_t* irq_get_current_regs() {
 
 // Initializes 16 empty IRQs
 void irq_init() {
+    // Setup the 16 common IRQs
     for ( int i = 0; i < 16; i++ ) {
         idt_set_gate(i + 0x20, (uintptr_t) irq_common_stub, 0x08, 0x8E);
     }
+
+    idt_set_gate(0xFF, (uintptr_t) irq_empty_stub, 0x08, 0x8E);
 
     kprintf("irqs setup\n");
 }

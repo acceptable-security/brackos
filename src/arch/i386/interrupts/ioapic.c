@@ -2,6 +2,7 @@
 #include <mem/vasa.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <kprint.h>
 
 // Memory offsets
@@ -81,21 +82,33 @@ uint32_t ioapic_get_irqs() {
 ioapic_redirect_entry_t ioapic_get_redirect_entry(uint8_t irq) {
     uint32_t reg = 0x10 + (2 * irq);
 
-    uint64_t data = ((uint64_t) ioapic_register_readl(reg) << 32) |
-                     (uint64_t) ioapic_register_readl(reg + 1);
+    uint64_t data = (uint64_t) ioapic_register_readl(reg) |
+                   ((uint64_t) ioapic_register_readl(reg + 1) << 32);
 
     return *(ioapic_redirect_entry_t*) &data;
 }
 
 // Set the redirect entry of an IRQ
-void ioapic_set_redirect_entry(int8_t irq, ioapic_redirect_entry_t redir) {
-    uint32_t reg = 0x10 + (2 * irq);
+void ioapic_set_redirect_entry(uint8_t irq, ioapic_redirect_entry_t redir) {
+    uint32_t reg = IOAPIC_REG_IOREDTBL + (2 * irq);
     uint64_t data = *(uint64_t*) &redir;
 
-    ioapic_register_writel(reg, (data >> 32) & 0xFFFFFFFF);
     ioapic_register_writel(reg, data & 0xFFFFFFFF);
+    ioapic_register_writel(reg + 1, (data >> 32) & 0xFFFFFFFF);
 }
 
+// Enable a specific interrupt
+void ioapic_enable_irq(uint8_t irq) {
+    ioapic_redirect_entry_t redir = ioapic_get_redirect_entry(irq);
+
+    // Clear fields
+    memset(&redir, 0, sizeof(ioapic_redirect_entry_t));
+    redir.vector = irq + 0x20; // TODO - make this dynamic
+
+    ioapic_set_redirect_entry(irq, redir);
+}
+
+// Initialize the I/O APIC but disable everything
 void ioapic_setup(uintptr_t base) {
     uintptr_t virt = (uintptr_t) vasa_alloc(MEM_PCI, 4096, 0);
 
