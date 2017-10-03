@@ -131,7 +131,10 @@ void ioapic_setup(uintptr_t base) {
     // Disable all interrupts
     for ( int i = 0; i < ioapic_get_irqs(); i++ ) {
         ioapic_redirect_entry_t redir = ioapic_get_redirect_entry(i);
+
+        memset(&redir, 0, sizeof(ioapic_redirect_entry_t));
         redir.mask = 1;
+
         ioapic_set_redirect_entry(i, redir);
     }
 

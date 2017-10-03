@@ -41,6 +41,6 @@ image:
 	grub-mkrescue -o brackos.iso isodir
 
 run:
-	qemu-system-i386 -kernel kernel.bin -d guest_errors,cpu_reset,int -no-reboot -serial stdio
+	qemu-system-i386 -kernel kernel.bin -d guest_errors,cpu_reset -no-reboot -serial stdio
 
 .PHONY: clean kernel run

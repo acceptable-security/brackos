@@ -121,7 +121,7 @@ typedef struct {
 
     uint8_t bus_src;
     uint8_t irq_src;
-    uint32_t global_system_interrupt;
+    uint32_t interrupt;
     uint16_t flags;
 } __attribute__((packed)) acpi_madt_iso_t;
 

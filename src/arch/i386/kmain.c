@@ -88,11 +88,13 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
 
     bool acpi = acpi_init();
 
-    if ( acpi && apic_supported() ) {
+    if ( acpi ) {
         kprintf("using the apic\n");
-        pic_disable();
-        lapic_enable();
-        ioapic_enable_irq(0);
+
+        pic_disable();        // Disable the PIC
+        lapic_enable();       // Enable the APIC
+
+        ioapic_enable_irq(0); // Enable the clock
     }
     else {
         kprintf("using the pic\n");
@@ -118,6 +120,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
 
     kprintf("enabling interrupts...\n");
     __asm__ volatile ("sti");
+    kprintf("... failed to enable interrupts!\n");
 
     for ( ;; ) {}
 }

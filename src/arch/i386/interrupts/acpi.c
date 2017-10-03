@@ -111,6 +111,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 }
 
                 kprintf("found iso\n");
+                kprintf("bus %d intr#%d -> intr#%d\n", iso->bus_src, iso->irq_src, iso->interrupt);
                 records_head += iso->length;
                 break;
             }

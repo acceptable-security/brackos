@@ -69,7 +69,7 @@ void lapic_eoi() {
 
 // Determine if the APIC is enabled
 bool lapic_is_enabled() {
-    return (inportb(0xF0) & 0x100);
+    return (lapic_register_readl(APIC_REG_SPURIOUS_INTERRUPT) & 0x100) == 0x100;
 }
 
 // Enable the spurious interrupt vector
@@ -86,10 +86,12 @@ void lapic_enable() {
     uintptr_t virt = (uintptr_t) vasa_alloc(MEM_PCI, 4096, 0);
 
     if ( virt == 0 ) {
+        kprintf("failed to allocate a lapic virt addr\n");
         return;
     }
 
     if ( !paging_map(base, virt, PAGE_PRESENT | PAGE_RW) ) {
+        kprintf("failed to map the lapic in\n");
         return;
     }
 
