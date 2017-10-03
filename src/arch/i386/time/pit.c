@@ -17,7 +17,6 @@ void pit_handle_interrupt(irq_regs_t* frame) {
     if ( sleep_counter > 0 ) {
         sleep_counter--;
     }
-
     // TODO - callbacks? (e.g. every X ms call Y)
 }
 

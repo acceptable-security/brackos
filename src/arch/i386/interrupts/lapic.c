@@ -68,7 +68,7 @@ uint32_t lapic_register_readl(uint32_t reg) {
 
 // Send the End of Interrupt to the APIC
 void lapic_eoi() {
-    lapic_register_writel(APIC_REG_END_OF_INTERRUPT, 0x00000000);
+    lapic_register_writel(APIC_REG_END_OF_INTERRUPT, 0);
 }
 
 // Determine if the APIC is enabled
@@ -79,7 +79,7 @@ bool lapic_is_enabled() {
 }
 
 // Enable the spurious interrupt vector
-void lapic_enable_spurious_interrupt(uint8_t intr) {
+void lapic_enable_spurious_interrupt(uint32_t intr) {
     lapic_register_writel(APIC_REG_SPURIOUS_INTERRUPT, intr | 0x100);
 }
 
@@ -113,6 +113,7 @@ void lapic_enable() {
     lapic_register_writel(APIC_REG_DESTINATION_FORMAT, 0xffffffff);  // Flat mode
     lapic_register_writel(APIC_REG_LOGICAL_DESTINATION, 1 << 24);    // Logical CPU 1
 
+    // Create spurious interrupt in IDT and enable it
     idt_set_gate(0xFF, (uintptr_t) irq_empty_stub, 0x08, 0x8E);
     lapic_enable_spurious_interrupt(0xFF);
 

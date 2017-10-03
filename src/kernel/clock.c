@@ -7,7 +7,6 @@
 clock_event_t* root;
 
 void clock_advance(uint32_t amount) {
-    // kprintf("advance %d\n");
     for ( clock_event_t* current = root; current; current = current->next ) {
         current->counter -= amount;
 
@@ -57,6 +56,10 @@ clock_event_t* clock_add(uint32_t time, clock_callback_t* callback) {
         event->prev->next = event;
         root->prev = event;
         event->next = root;
+    }
+    else {
+        event->next = NULL;
+        event->prev = NULL;
     }
 
     root = event;
