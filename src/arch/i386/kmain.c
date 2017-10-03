@@ -88,17 +88,21 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
 
     bool acpi = acpi_init();
 
-    if ( acpi ) {
-        kprintf("using the apic\n");
+    kprintf("enabling the pic\n");
+    pic_enable(0x20, 0x28);
+
+    if ( acpi && apic_supported() ) {
+        kprintf("enabling the apic\n");
 
         pic_disable();        // Disable the PIC
         lapic_enable();       // Enable the APIC
 
-        ioapic_enable_irq(0); // Enable the clock
-    }
-    else {
-        kprintf("using the pic\n");
-        pic_enable(0x20, 0x28);
+        // Enable all 16 IRQ interrupts
+        for ( int i = 0; i < 16; i++ ) {
+            ioapic_enable_irq(i, 0x20 + i); // Enable the clock
+        }
+
+        kprintf("apic enabled: %d\n", lapic_is_enabled());
     }
 
     irq_init();         // Setup Interrupt Requests

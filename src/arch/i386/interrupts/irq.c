@@ -18,11 +18,21 @@ irq_handler_t* irq_handlers[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 void irq_send_eoi(uint16_t irq) {
     // Send appropriate EOI
-    if ( apic_supported() && lapic_is_enabled() ) {
+    if ( lapic_is_enabled() ) {
         lapic_eoi();
     }
     else {
         pic_eoi(irq);
+    }
+}
+
+int irq_get_current() {
+    if ( lapic_is_enabled() ) {
+        uint16_t isr = pic_get_isr() & ~(1 << 2);
+        return __builtin_ctz(isr);
+    }
+    else {
+        return lapic_inservice_routine();
     }
 }
 
@@ -32,9 +42,7 @@ void irq_general_handler(irq_regs_t* frame) {
     irq_current_regs = frame;
     irq_happening = true;
 
-    // Ignore the cascading bit
-    uint16_t isr = pic_get_isr() & ~(1 << 2);
-    int irq = __builtin_ctz(isr);
+    int irq = irq_get_current();
 
     irq_handler_t* handler = irq_handlers[irq];
 
@@ -84,8 +92,6 @@ void irq_init() {
     for ( int i = 0; i < 16; i++ ) {
         idt_set_gate(i + 0x20, (uintptr_t) irq_common_stub, 0x08, 0x8E);
     }
-
-    idt_set_gate(0xFF, (uintptr_t) irq_empty_stub, 0x08, 0x8E);
 
     kprintf("irqs setup\n");
 }

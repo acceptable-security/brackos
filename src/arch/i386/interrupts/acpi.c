@@ -61,6 +61,7 @@ bool acpi_validate(void* ptr, unsigned long len) {
 
 // Parse the Multi APIC Descriptor Table
 void acpi_parse_madt(acpi_madt_t* madt) {
+    kprintf("local apic address: %x\n", madt->local_controller_address);
     uintptr_t records_start = ((uintptr_t) madt) + sizeof(acpi_madt_t);
     uintptr_t records_end = records_start + (madt->table.length - sizeof(acpi_madt_t));
 
@@ -76,12 +77,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_lapic_t* lapic = (acpi_madt_lapic_t*) records_head;
 
                 if ( lapic->length == 0 ) {
-                    kprintf("found zero length record\n");
+                    kprintf("Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("found processor #%d (0x%x)\n", lapic->processor_id, lapic->flags);
+                kprintf("Found processor #%d (0x%x)\n", lapic->processor_id, lapic->flags);
                 records_head += lapic->length;
                 break;
             }
@@ -90,12 +91,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_ioapic_t* ioapic = (acpi_madt_ioapic_t*) records_head;
 
                 if ( ioapic->length == 0 ) {
-                    kprintf("found zero length record\n");
+                    kprintf("Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("found ioapic %d\n", ioapic->id);
+                kprintf("Found I/O APIC %d\n", ioapic->id);
                 ioapic_setup(ioapic->address);
                 records_head += ioapic->length;
                 break;
@@ -105,13 +106,13 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_iso_t* iso = (acpi_madt_iso_t*) records_head;
 
                 if ( iso->length == 0 ) {
-                    kprintf("found zero length record\n");
+                    kprintf("Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("found iso\n");
-                kprintf("bus %d intr#%d -> intr#%d\n", iso->bus_src, iso->irq_src, iso->interrupt);
+                kprintf("Found Interrupt Service Overide\n");
+                kprintf("- bus %d intr#%d -> intr#%d\n", iso->bus_src, iso->irq_src, iso->interrupt);
                 records_head += iso->length;
                 break;
             }
@@ -120,12 +121,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_nmi_t* nmi = (acpi_madt_nmi_t*) records_head;
 
                 if ( nmi->length == 0 ) {
-                    kprintf("found zero length record\n");
+                    kprintf("Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("found nmi\n");
+                kprintf("Found Nonmaskable Interrupt\n");
                 records_head += nmi->length;
                 break;
             }
@@ -134,12 +135,13 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_lapic_nmi_t* lapic_nmi = (acpi_madt_lapic_nmi_t*) records_head;
 
                 if ( lapic_nmi->length == 0 ) {
-                    kprintf("found zero length record\n");
+                    kprintf("Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("found lapic nmi\n");
+                kprintf("Found local APIC Nonmaskable Interrupt\n");
+                kprintf("- processor #%d interrupt #%d\n", lapic_nmi->processor_id, lapic_nmi->lint);
                 records_head += lapic_nmi->length;
                 break;
             }
@@ -148,12 +150,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_lapic_ao_t* lapic_ao = (acpi_madt_lapic_ao_t*) records_head;
 
                 if ( lapic_ao->length == 0 ) {
-                    kprintf("found zero length record\n");
+                    kprintf("Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("found lapic address override\n");
+                kprintf("Found local APIC Address Override\n");
                 records_head += lapic_ao->length;
                 break;
             }
@@ -162,12 +164,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_io_sapic_t* io_sapic = (acpi_madt_io_sapic_t*) records_head;
 
                 if ( io_sapic->length == 0 ) {
-                    kprintf("found zero length record\n");
+                    kprintf("Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("found I/O SAPIC\n");
+                kprintf("Found I/O SAPIC\n");
                 records_head += io_sapic->length;
                 break;
             }
@@ -176,7 +178,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_local_sapic_t* local_sapic = (acpi_madt_local_sapic_t*) records_head;
 
                 if ( local_sapic->length == 0 ) {
-                    kprintf("found zero length record\n");
+                    kprintf("Found zero length record\n");
                     complete = true;
                     break;
                 }
@@ -184,7 +186,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 // Load the address of the string into the string field
                 local_sapic->processor_uid_string = (uint8_t*) ((uintptr_t) &local_sapic->processor_uid_value + sizeof(uint32_t));
 
-                kprintf("found local SAPIC\n");
+                kprintf("Found local SAPIC\n");
                 records_head += local_sapic->length;
                 break;
             }
@@ -193,12 +195,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
             case 8:
             case 9:
             case 10:
-                kprintf("not yet implemented %d\n", type);
+                kprintf("Not yet implemented %d\n", type);
                 complete = true;
                 break;
 
             default:
-                kprintf("found unknown %d\n", type);
+                kprintf("Found unknown %d\n", type);
                 records_head += 1;
                 break;
         }

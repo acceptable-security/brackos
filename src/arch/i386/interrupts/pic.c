@@ -48,7 +48,9 @@ void pic_enable(unsigned int master_offset, unsigned int slave_offset) {
 void pic_disable() {
     // Mask all IRQs
     outportb(PIC_DATA_1, 0xFF);
+    io_wait();
     outportb(PIC_DATA_2, 0xFF);
+    io_wait();
 }
 
 // Send End-Of-Interrupt command

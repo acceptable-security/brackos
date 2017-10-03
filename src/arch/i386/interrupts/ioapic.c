@@ -45,7 +45,7 @@ typedef struct {
     uint32_t trigger_mode     : 1;
     uint32_t mask             : 1;
     uint32_t reserved1        : 32;
-    uint8_t reserved2         : 7;
+    uint8_t  reserved2        : 7;
     uint32_t destination      : 8;
 } __attribute__((packed)) ioapic_redirect_entry_t;
 
@@ -98,12 +98,13 @@ void ioapic_set_redirect_entry(uint8_t irq, ioapic_redirect_entry_t redir) {
 }
 
 // Enable a specific interrupt
-void ioapic_enable_irq(uint8_t irq) {
+void ioapic_enable_irq(uint8_t irq, uint8_t vector) {
     ioapic_redirect_entry_t redir = ioapic_get_redirect_entry(irq);
 
-    // Clear fields
-    memset(&redir, 0, sizeof(ioapic_redirect_entry_t));
-    redir.vector = irq + 0x20; // TODO - make this dynamic
+    redir.vector = vector;
+    redir.delivery_mode = IOAPIC_DELIVERY_MODE_FIX;
+    redir.destination_mode = IOAPIC_DEST_PHYSICAL;
+    redir.mask = 0;
 
     ioapic_set_redirect_entry(irq, redir);
 }
@@ -121,9 +122,9 @@ void ioapic_setup(uintptr_t base) {
     }
 
     // Virtual page + page offset
-    ioapic_base = virt + (base & 0xFFFF);
+    ioapic_base = virt;
 
-    kprintf("IOAPIC: setup at 0x%x\n", ioapic_base);
+    kprintf("IOAPIC: setup at 0x%x (previously 0x%x)\n", ioapic_base, base);
     kprintf("IOAPIC: ID: %d\n", ioapic_get_id());
     kprintf("IOAPIC: version: 0x%x\n", ioapic_get_version());
     kprintf("IOAPIC: IRQ#: %d\n", ioapic_get_irqs());

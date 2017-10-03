@@ -9,6 +9,7 @@ uintptr_t lapic_get_base();
 void lapic_eoi();
 void lapic_enable();
 bool lapic_is_enabled();
+int lapic_inservice_routine();
 
 // I/O APIC commands
 void ioapic_register_writel(uint8_t offset, uint32_t val);
@@ -17,4 +18,4 @@ uint32_t ioapic_get_id();
 uint32_t ioapic_get_version();
 uint32_t ioapic_get_irqs();
 void ioapic_setup(uintptr_t base);
-void ioapic_enable_irq(uint8_t irq);
+void ioapic_enable_irq(uint8_t irq, uint8_t vector);
