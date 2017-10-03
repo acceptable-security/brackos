@@ -4,3 +4,4 @@ build/
 kernel.bin
 qemu.log
 .gdb_history
+brackos.iso
