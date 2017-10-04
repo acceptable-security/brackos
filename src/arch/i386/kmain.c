@@ -86,7 +86,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     idt_init();         // Intialize the Interrupt Descriptor Table
     idt_load();         // Load the intiailized IDT
 
-    bool acpi = false; //acpi_init();
+    bool acpi = acpi_init();
 
     kprintf("enabling the pic\n");
     pic_enable(0x20, 0x28);
@@ -124,7 +124,6 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
 
     kprintf("enabling interrupts...\n");
     __asm__ volatile ("sti");
-    kprintf("... failed to enable interrupts!\n");
 
     for ( ;; ) {}
 }

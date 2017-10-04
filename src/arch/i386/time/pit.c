@@ -46,10 +46,16 @@ void pit_data_send(uint8_t channel, uint8_t data) {
     switch ( channel ) {
         case 0:
             outportb(PIT_DATA_CHAN_0, data);
+            break;
+            
         case 1:
             outportb(PIT_DATA_CHAN_1, data);
+            break;
+            
         case 2:
             outportb(PIT_DATA_CHAN_2, data);
+            break;
+            
     }
 
     io_wait();

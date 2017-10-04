@@ -91,22 +91,23 @@ ioapic_redirect_entry_t ioapic_get_redirect_entry(uint8_t irq) {
 // Set the redirect entry of an IRQ
 void ioapic_set_redirect_entry(uint8_t irq, ioapic_redirect_entry_t redir) {
     uint32_t reg = IOAPIC_REG_IOREDTBL + (2 * irq);
-    uint64_t data = *(uint64_t*) &redir;
+    uint32_t* data = (uint32_t*) &redir;
 
-    ioapic_register_writel(reg, data & 0xFFFFFFFF);
-    ioapic_register_writel(reg + 1, (data >> 32) & 0xFFFFFFFF);
+    ioapic_register_writel(reg, data[0]);
+    ioapic_register_writel(reg + 1, data[1]);
 }
 
 // Enable a specific interrupt
-void ioapic_enable_irq(uint8_t irq, uint8_t vector) {
+void ioapic_enable_irq(uint32_t irq, uint8_t vector) {
     ioapic_redirect_entry_t redir = ioapic_get_redirect_entry(irq);
 
     redir.vector = vector;
     redir.delivery_mode = IOAPIC_DELIVERY_MODE_FIX;
-    redir.destination_mode = IOAPIC_DEST_PHYSICAL;
+    redir.destination_mode = IOAPIC_DEST_LOGICAL;
     redir.mask = 0;
 
     ioapic_set_redirect_entry(irq, redir);
+    kprintf("IOAPIC: mapping IRQ#%d to interrupt %d\n", irq, vector);
 }
 
 // Initialize the I/O APIC but disable everything
@@ -133,7 +134,6 @@ void ioapic_setup(uintptr_t base) {
     for ( int i = 0; i < ioapic_get_irqs(); i++ ) {
         ioapic_redirect_entry_t redir = ioapic_get_redirect_entry(i);
 
-        memset(&redir, 0, sizeof(ioapic_redirect_entry_t));
         redir.mask = 1;
 
         ioapic_set_redirect_entry(i, redir);

@@ -27,7 +27,12 @@ const char* nmi_strs[] = {
 };
 
 void nmi_handle(irq_regs_t* frame, int error) {
-    kprintf("NMI: %s @ %p\n", nmi_strs[error], frame);
+    if ( error > 19 ) {
+        kprintf("NMI: invalid (%d) @ %p\n", error, frame);
+    }
+    else {
+        kprintf("NMI: %s @ %p\n", nmi_strs[error], frame);
+    }
 
     if ( frame != NULL ) {
         irq_regs_print(frame);

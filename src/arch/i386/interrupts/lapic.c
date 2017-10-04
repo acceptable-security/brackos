@@ -17,6 +17,7 @@ extern void irq_empty_stub();
 #define APIC_REG_DESTINATION_FORMAT  0x00E0
 #define APIC_REG_SPURIOUS_INTERRUPT  0x00F0
 #define APIC_REG_INSERVICE_ROUTINE   0x0100
+#define APIC_REG_ERROR_STATUS        0x0280
 #define APIC_REG_INTERRUPT_CMD_LOW   0x0300
 #define APIC_REG_INTERRUPT_CMD_HIGH  0x0310
 #define APIC_REG_LVT_TIMER           0x0320
@@ -56,14 +57,15 @@ uintptr_t lapic_get_base() {
     return (eax & 0xfffff000);
 }
 
-// Write to an apic register
-void lapic_register_writel(uint32_t reg, uint32_t value) {
-    *(volatile uint32_t*)(lapic_base + reg) = value;
-}
-
 // Read to an apic register
 uint32_t lapic_register_readl(uint32_t reg) {
     return *(volatile uint32_t*)(lapic_base + reg);
+}
+
+// Write to an apic register
+void lapic_register_writel(uint32_t reg, uint32_t value) {
+    *(volatile uint32_t*)(lapic_base + reg) = value;
+    (void) lapic_register_readl(APIC_REG_ID);
 }
 
 // Send the End of Interrupt to the APIC
@@ -88,10 +90,19 @@ int lapic_inservice_routine() {
     return __builtin_ctz(lapic_register_readl(APIC_REG_INSERVICE_ROUTINE));
 }
 
+// Clear error status register
+void lapic_clear_error() {
+    kprintf("error status: %x\n", lapic_register_readl(APIC_REG_ERROR_STATUS));
+    lapic_register_writel(APIC_REG_ERROR_STATUS, 0);
+    lapic_register_writel(APIC_REG_ERROR_STATUS, 0);
+}
+
 // Enable the APIc
 void lapic_enable() {
     // Hardware enable APIC
     uintptr_t base = lapic_get_base();
+    // Set the local APIC base, enabling it.
+    lapic_set_base(base);
 
     kprintf("lapic base: %x\n", base);
 
@@ -109,15 +120,19 @@ void lapic_enable() {
 
     lapic_base = virt;
 
-    lapic_register_writel(APIC_REG_TASK_PRIORITY, 0);                // Enable all interrupts
-    lapic_register_writel(APIC_REG_DESTINATION_FORMAT, 0xffffffff);  // Flat mode
-    lapic_register_writel(APIC_REG_LOGICAL_DESTINATION, 1 << 24);    // Logical CPU 1
-
     // Create spurious interrupt in IDT and enable it
     idt_set_gate(0xFF, (uintptr_t) irq_empty_stub, 0x08, 0x8E);
     lapic_enable_spurious_interrupt(0xFF);
 
-    lapic_set_base(base);
+    lapic_register_writel(APIC_REG_TASK_PRIORITY, 0);                // Enable all interrupts
+    lapic_register_writel(APIC_REG_DESTINATION_FORMAT, 0xffffffff);  // Flat mode
+    lapic_register_writel(APIC_REG_LOGICAL_DESTINATION, 1 << 24);    // Logical CPU 1
+
+    // Clear out any outstanding interrupts
+    lapic_eoi();
+
+    // Clear the errors
+    lapic_clear_error();
 
     kprintf("local apic setup at %p.\n", lapic_base);
     kprintf("local apic id: %d\n", (lapic_register_readl(APIC_REG_ID) >> 24));
