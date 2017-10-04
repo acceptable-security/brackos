@@ -43,6 +43,7 @@ void irq_general_handler(irq_regs_t* frame) {
     irq_happening = true;
 
     int irq = irq_get_current();
+    kprintf("IRQ %d\n", irq);
 
     irq_handler_t* handler = irq_handlers[irq];
 

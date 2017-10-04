@@ -99,7 +99,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
 
         // Enable all 16 IRQ interrupts
         for ( int i = 0; i < 16; i++ ) {
-            ioapic_enable_irq(i, 0x20 + i); // Enable the clock
+            ioapic_enable_irq(i, 0x20 + i);
         }
 
         kprintf("apic enabled: %d\n", lapic_is_enabled());

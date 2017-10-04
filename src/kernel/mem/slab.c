@@ -343,12 +343,8 @@ mem_kmalloc_block_t _kmalloc_get_block(void* object) {
     return (mem_kmalloc_block_t) { .size = 0, .name = "" };
 }
 
-// kmalloc for small pointers
-void* _kmalloc(unsigned int size) {
-    if ( size == 0 ) {
-        return NULL;
-    }
-
+// Get a kmalloc block for a given size
+mem_kmalloc_block_t _kmalloc_block_for_size(unsigned long size) {
     // Start with a NULL block
     mem_kmalloc_block_t block = { .size = 0, .name = "" };
 
@@ -360,11 +356,55 @@ void* _kmalloc(unsigned int size) {
         }
     }
 
+    return block;
+}
+
+// kmalloc for small pointers
+void* _kmalloc(unsigned int size) {
+    if ( size == 0 ) {
+        return NULL;
+    }
+
+    mem_kmalloc_block_t block = _kmalloc_block_for_size(size);
+
     if ( block.size == 0 ) {
         return NULL;
     }
 
     return mem_cache_alloc(block.name);
+}
+
+// krealloc for small pointers
+void* _krealloc(void* ptr, unsigned long size) {
+    // Get the current block size of the pointer
+    mem_kmalloc_block_t current_block = _kmalloc_get_block(ptr);
+
+    if ( current_block.size == 0 ) {
+        return NULL;
+    }
+
+    mem_kmalloc_block_t next_block = _kmalloc_block_for_size(size);
+
+    if ( next_block.size == current_block.size ) {
+        // We can continue using the same block of memory since we're within the
+        // same chunk that were in before.
+        return ptr;
+    }
+    else {
+        void* next_ptr = mem_cache_alloc(next_block.name);
+
+        if ( next_ptr == NULL ) {
+            return NULL;
+        }
+
+        // Copy the old contents
+        memcpy(next_ptr, ptr, current_block.size);
+
+        // Release the old chunk of memory
+        mem_cache_dealloc(current_block.name, ptr);
+
+        return next_ptr;
+    }
 }
 
 // kfree for small pointers
