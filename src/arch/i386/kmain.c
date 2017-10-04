@@ -94,8 +94,8 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     if ( acpi && apic_supported() ) {
         kprintf("enabling the apic\n");
 
-        pic_disable();        // Disable the PIC
-        lapic_enable();       // Enable the APIC
+        pic_disable();   // Disable the PIC
+        lapic_enable();  // Enable the APIC
 
         // Enable all 16 IRQ interrupts
         for ( int i = 0; i < 16; i++ ) {
