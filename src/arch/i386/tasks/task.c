@@ -1,3 +1,4 @@
+#include <arch/i386/irq.h>
 #include <arch/i386/scheduler.h>
 #include <arch/i386/task.h>
 #include <arch/i386/tss.h>
@@ -101,12 +102,10 @@ task_t* task_kernel_create(char* name, uintptr_t address) {
 void task_schedule(task_t* task) {
     // Update tss
     tss_update(task->int_stack_top);
+    irq_send_eoi(0); // TODO: load IRQ from somewhere
 
     // Here it goes...
     __asm__ volatile("mov %0, %%esp;"   // Load the task stack
-                     "mov $0x20, %%al;" // Send the EOI - TODO: do irq_send_eoi
-                     "mov $0x20, %%dx;"
-                     "outb %%al, %%dx;"
                      "jmp irq_exit;"    // Load the new registers
     			     : :"r"(task->user_regs));
 }

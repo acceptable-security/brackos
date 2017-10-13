@@ -5,6 +5,7 @@
 
 #include <arch/i386/apic.h>
 #include <arch/i386/pic.h>
+#include <arch/i386/io.h>
 
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
@@ -39,50 +40,28 @@ void late_kernel_main() {
     for ( ;; ) {}
 }
 
-// Old tests from development
-void old_tests() {
-    // memmap testing code:
-    // void* test1 = memmap(NULL, 4096*3, MMAP_RW | MMAP_URGENT);
-    // void* test2 = memmap(NULL, 4096, MMAP_RW | MMAP_URGENT);
-    // memunmap(test2, 4096);
-    //
-    // kprintf("%p ...?\n", test2);
-    //
-    // paging_print();
-
-    // VASA testing code:
-    // vasa_print_state();
-    // kprintf("\n");
-    // void* test = vasa_alloc(MEM_RAM, 1);
-    // kprintf("got %p\n\n", test);
-    // vasa_print_state();
-    // kprintf("\n");
-    // vasa_dealloc(test);
-    // vasa_print_state();
-
-    // Paging testing code:
-    // paging_print();
-    // paging_map(frame_alloc(1), (void*) 0x20000000, PAGE_PRESENT | PAGE_RW);
-    // paging_print();
-    // paging_unmap((void*) 0x20000000);
-    // paging_print();
+// Load IO devices
+void load_io() {
+    rs232_init(); // Enable RS232 serial i/o
+    vga_init(); // Enable VGA output
 }
 
-void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, unsigned long initial_pd, unsigned long kernel_heap_start, unsigned long kernel_heap_size) {
-    if ( multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
-        // TODO - have an actual panic
-        for ( ;; ) {}
-    }
-
-    gdt_init();         // Initialize the global descriptor table
-    rs232_init();       // Enable RS232 serial i/o
-    vga_init();         // Enable VGA output
-
+// Load memory
+void load_memory(multiboot_info_t* multiboot, unsigned long kernel_heap_start, unsigned long kernel_heap_size) {
     // Enable early stage kmalloc/memmap
     early_kmalloc_init((void*) kernel_heap_start, kernel_heap_size);
     memmap_to_frames(multiboot);
     vasa_init((void*) 0xD0000000, (uintptr_t) page_table_base - 0xD0000000);
 
+    // Initiate late stage memory
+    frame_init();       // Setup the frame allocator
+    kmalloc_init();     // Setup late stage kmalloc
+    vasa_switch();      // Switch the virtual address space allocator into late stage mode
+    kmem_swap();        // Switch to late stage memory
+}
+
+// Load the interrupt routines
+void load_interrupts() {
     idt_init();         // Intialize the Interrupt Descriptor Table
     idt_load();         // Load the intiailized IDT
 
@@ -106,16 +85,21 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     }
 
     irq_init();         // Setup Interrupt Requests
-    nmi_init();         // Setup Nonmaskable Interrupts
+    exception_init();   // Setup CPU exceptions
     pit_init();         // Setup the Programmable Interrupt Timer
+}
+
+void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, unsigned long initial_pd, unsigned long kernel_heap_start, unsigned long kernel_heap_size) {
+    if ( multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
+        // TODO - have an actual panic
+        for ( ;; ) {}
+    }
+
+    gdt_init();          // Initialize the global descriptor table
+    load_io();           // Load some I/O devices
+    load_memory(multiboot, kernel_heap_start, kernel_heap_size); // Load memory
+    load_interrupts();  // Load interrupts
     ps2_init();         // Setup PS/2 drivers
-
-    // Initiate late stage memory
-    frame_init();       // Setup the frame allocator
-    kmalloc_init();     // Setup late stage kmalloc
-    vasa_switch();      // Switch the virtual address space allocator into late stage mode
-    kmem_swap();        // Switch to late stage memory
-
     tss_init();         // Setup the task segment selector
     clock_init();       // Setup the clock subsystem
 

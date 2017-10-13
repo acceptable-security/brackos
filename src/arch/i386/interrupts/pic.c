@@ -51,6 +51,8 @@ void pic_disable() {
     io_wait();
     outportb(PIC_DATA_2, 0xFF);
     io_wait();
+
+    pic_eoi(8);
 }
 
 // Send End-Of-Interrupt command

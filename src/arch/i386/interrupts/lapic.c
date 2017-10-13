@@ -44,6 +44,15 @@ bool apic_supported() {
     return (edx & bit_APIC) != 0;
 }
 
+bool lapic_is_x2apic() {
+    uint32_t eax, edx;
+    cpu_get_msr(IA32_APIC_BASE_MSR, &eax, &edx);
+
+    const uint32_t flags = IA32_APIC_BASE_MSR_X2APIC;
+
+    return (eax & flags) == flags;
+}
+
 // Set the physical address of the APIC
 void lapic_set_base(uintptr_t apic) {
     uint32_t eax = (apic & 0xfffff000) | IA32_APIC_BASE_MSR_ENABLE;
@@ -101,10 +110,9 @@ void lapic_clear_error() {
 void lapic_enable() {
     // Hardware enable APIC
     uintptr_t base = lapic_get_base();
-    // Set the local APIC base, enabling it.
-    lapic_set_base(base);
 
     kprintf("lapic base: %x\n", base);
+    kprintf("lapic is x2apic: %d\n", lapic_is_x2apic());
 
     uintptr_t virt = (uintptr_t) vasa_alloc(MEM_PCI, 4096, 0);
 
@@ -120,19 +128,14 @@ void lapic_enable() {
 
     lapic_base = virt;
 
+    lapic_register_writel(APIC_REG_TASK_PRIORITY, 0);                // Enable all interrupts
+    lapic_register_writel(APIC_REG_DESTINATION_FORMAT, 0xFFFFFFFF);  // Flat mode
+    lapic_register_writel(APIC_REG_LOGICAL_DESTINATION, 1 << 24); // Logical CPU 1
+
     // Create spurious interrupt in IDT and enable it
     idt_set_gate(0xFF, (uintptr_t) irq_empty_stub, 0x08, 0x8E);
     lapic_enable_spurious_interrupt(0xFF);
 
-    lapic_register_writel(APIC_REG_TASK_PRIORITY, 0);                // Enable all interrupts
-    lapic_register_writel(APIC_REG_DESTINATION_FORMAT, 0xffffffff);  // Flat mode
-    lapic_register_writel(APIC_REG_LOGICAL_DESTINATION, 1 << 24);    // Logical CPU 1
-
-    // Clear out any outstanding interrupts
-    lapic_eoi();
-
-    // Clear the errors
-    lapic_clear_error();
 
     kprintf("local apic setup at %p.\n", lapic_base);
     kprintf("local apic id: %d\n", (lapic_register_readl(APIC_REG_ID) >> 24));

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-const char* nmi_strs[] = {
+const char* exception_strs[] = {
     "Dividing by Zero",
     "Debug",
     "Non Maskable Interrupt",
@@ -26,12 +26,12 @@ const char* nmi_strs[] = {
     "Machine Check"
 };
 
-void nmi_handle(irq_regs_t* frame, int error) {
+void exception_handle(irq_regs_t* frame, int error) {
     if ( error > 19 ) {
-        kprintf("NMI: invalid (%d) @ %p\n", error, frame);
+        kprintf("CPU Exception: invalid (%d) @ %p\n", error, frame);
     }
     else {
-        kprintf("NMI: %s @ %p\n", nmi_strs[error], frame);
+        kprintf("CPU Exception: %s @ %p\n", exception_strs[error], frame);
     }
 
     if ( frame != NULL ) {
@@ -41,10 +41,10 @@ void nmi_handle(irq_regs_t* frame, int error) {
     __asm__ ("cli; hlt");
 }
 
-void nmi_init() {
+void exception_init() {
     for ( int i = 0; i < 19; i++ ) {
-        idt_set_gate(i, (uintptr_t) nmi_handle, 0x08, 0x8E);
+        idt_set_gate(i, (uintptr_t) exception_handle, 0x08, 0x8E);
     }
 
-    kprintf("nmi setup\n");
+    kprintf("exceptions setup\n");
 }

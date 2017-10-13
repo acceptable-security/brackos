@@ -12,6 +12,7 @@
 
 #define IA32_APIC_BASE_MSR        0x1B
 #define IA32_APIC_BASE_MSR_BSP    0x100
+#define IA32_APIC_BASE_MSR_X2APIC 0x400
 #define IA32_APIC_BASE_MSR_ENABLE 0x800
 
 bool cpu_has_msr() {

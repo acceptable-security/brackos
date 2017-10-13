@@ -13,7 +13,7 @@
 #define IOAPIC_REG_IOAPICID  0
 #define IOAPIC_REG_IOAPICVER 1
 #define IOAPIC_REG_IOAPICARB 2
-#define IOAPIC_REG_IOREDTBL  3
+#define IOAPIC_REG_IOREDTBL  0x10
 
 // Different delivery modes
 #define IOAPIC_DELIVERY_MODE_FIX    0
@@ -103,8 +103,9 @@ void ioapic_enable_irq(uint32_t irq, uint8_t vector) {
 
     redir.vector = vector;
     redir.delivery_mode = IOAPIC_DELIVERY_MODE_FIX;
-    redir.destination_mode = IOAPIC_DEST_LOGICAL;
+    redir.destination_mode = IOAPIC_DEST_PHYSICAL;
     redir.mask = 0;
+    redir.destination = 0;
 
     ioapic_set_redirect_entry(irq, redir);
     kprintf("IOAPIC: mapping IRQ#%d to interrupt %d\n", irq, vector);
