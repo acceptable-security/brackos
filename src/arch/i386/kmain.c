@@ -30,8 +30,8 @@
 #include <stdint.h>
 #include <string.h>
 
-extern uintptr_t virtual_end;
 extern void* page_table_base;
+extern uintptr_t our_gdt_phys;
 unsigned long kernel_base = 0xC0000000;
 
 void late_kernel_main() {
@@ -81,6 +81,8 @@ void load_interrupts(bool apic_overide) {
         ioapic_enable_irq(acpi_irq_remap(12), 0x20 + 12);
 
         kprintf("apic enabled: %d\n", lapic_is_enabled());
+
+        smp_init();
     }
 
     irq_init();         // Setup Interrupt Requests
@@ -98,6 +100,7 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     load_memory(multiboot, kernel_heap_start, kernel_heap_size); // Load memory
     load_io();              // Load some I/O devices
     load_interrupts(false); // Load interrupts
+    kprintf("gdt physical: %p\n", our_gdt_phys);
     ps2_init();             // Setup PS/2 drivers
     tss_init();             // Setup the task segment selector
     clock_init();           // Setup the clock subsystem

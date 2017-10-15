@@ -1,5 +1,6 @@
 global gdt_init
 global our_gdt
+global our_gdt_phys
 global tss_set
 section .text
 
@@ -57,13 +58,14 @@ our_gdt:
         at address, dd our_gdt_entries
     iend
 
+our_gdt_phys equ our_gdt - 0xC0000000
+
 ; actual gdt loading code
 ; load the gdt from memory an then load the segment registers w/ a near jump.
 gdt_init:
     push ebp
     mov ebp, esp
     mov eax, our_gdt
-    ; sub eax, 0xC0000000
     lgdt [eax]
     mov ax, 0x10
     mov ds, ax

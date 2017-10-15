@@ -19,3 +19,6 @@ uint32_t ioapic_get_version();
 uint32_t ioapic_get_irqs();
 void ioapic_setup(uintptr_t base);
 void ioapic_enable_irq(uint8_t irq, uint8_t vector);
+
+// SMP commands
+void smp_init();

@@ -27,5 +27,6 @@ SECTIONS {
         _ebss = .;
     }
 
-    physical_end = . - kern_mem; virtual_end = .;
+    physical_end = . - kern_mem;
+    virtual_end = .;
 }
