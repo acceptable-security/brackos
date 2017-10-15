@@ -80,7 +80,7 @@ uint32_t ioapic_get_irqs() {
 
 // Get the redirect entry of an IRQ
 ioapic_redirect_entry_t ioapic_get_redirect_entry(uint8_t irq) {
-    uint32_t reg = 0x10 + (2 * irq);
+    uint32_t reg = IOAPIC_REG_IOREDTBL + (2 * irq);
 
     uint64_t data = (uint64_t) ioapic_register_readl(reg) |
                    ((uint64_t) ioapic_register_readl(reg + 1) << 32);

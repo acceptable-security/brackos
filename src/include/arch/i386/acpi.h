@@ -211,4 +211,5 @@ bool acpi_validate(void* ptr, unsigned long len);
 void acpi_parse_table(acpi_sdt_t* ptr);
 bool acpi_parse_rsdt(acpi_rsdt_t* rsdt);
 void acpi_parse_fadt(acpi_fadt_t* fadt);
+uint32_t acpi_irq_remap(uint32_t irq);
 bool acpi_init();

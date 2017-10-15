@@ -15,6 +15,25 @@
 
 extern unsigned long kernel_base;
 
+uint32_t acpi_irq_redir[16] = {
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+    0xFFFFFFFF,
+};
+
 // Search memory for the RSDP signature
 rsdp_desc_t* rsdp_locate() {
     uintptr_t start = 0xC00E0000;
@@ -111,8 +130,10 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                     break;
                 }
 
-                kprintf("Found Interrupt Service Overide\n");
-                kprintf("- bus %d intr#%d -> intr#%d\n", iso->bus_src, iso->irq_src, iso->interrupt);
+                kprintf("Found Interrupt Source Overide\n");
+                kprintf("- bus %d intr#%d -> intr#%d (%x)\n", iso->bus_src, iso->irq_src, iso->interrupt, iso->flags);
+                acpi_irq_redir[iso->irq_src] = iso->interrupt;
+
                 records_head += iso->length;
                 break;
             }
@@ -296,6 +317,15 @@ void acpi_parse_table(acpi_sdt_t* ptr) {
             kprintf("Found unknown table: %c%c%c%c\n", ptr->signature[0], ptr->signature[1], ptr->signature[2], ptr->signature[3]);
             break;
     }
+}
+
+// Remap an IRQ
+uint32_t acpi_irq_remap(uint32_t irq) {
+    if ( acpi_irq_redir[irq] != 0xFFFFFFFF) {
+        return acpi_irq_redir[irq];
+    }
+
+    return irq;
 }
 
 // Initialize ACPI

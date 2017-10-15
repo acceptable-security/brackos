@@ -28,11 +28,11 @@ void irq_send_eoi(uint16_t irq) {
 
 int irq_get_current() {
     if ( lapic_is_enabled() ) {
-        uint16_t isr = pic_get_isr() & ~(1 << 2);
-        return __builtin_ctz(isr);
+        return lapic_inservice_routine();
     }
     else {
-        return lapic_inservice_routine();
+        uint16_t isr = pic_get_isr() & ~(1 << 2);
+        return __builtin_ctz(isr);
     }
 }
 
@@ -44,11 +44,13 @@ void irq_general_handler(irq_regs_t* frame) {
 
     int irq = irq_get_current();
 
-    irq_handler_t* handler = irq_handlers[irq];
+    if ( irq < 16 ) {
+        irq_handler_t* handler = irq_handlers[irq];
 
-    // Make sure it is actually installed.
-    if ( handler ) {
-        handler(frame);
+        // Make sure it is actually installed.
+        if ( handler ) {
+            handler(frame);
+        }
     }
 
     // Send EOI

@@ -3,31 +3,41 @@
 #include <drivers/ps2.h>
 #include <kprint.h>
 
+uint8_t mouse_state[3];  // Mouse bytes state
+uint8_t mouse_index = 0; // Index in the mouse byte state
+
+// Read a byte out of the buffer and if possible parse the data.
+void ps2_mouse_read() {
+    mouse_state[mouse_index++] = ps2_read_data();
+
+    if ( mouse_index == 3 ) {
+        mouse_index = 0;
+
+        bool left, center, right;
+
+        uint8_t state = mouse_state[0];
+        uint8_t xm = mouse_state[1];
+        uint8_t ym = mouse_state[2];
+
+        left = state & PS2_MOUSE_LEFT;
+        center = state & PS2_MOUSE_CENTER;
+        right = state & PS2_MOUSE_RIGHT;
+
+        int32_t delta_x = (state & PS2_MOUSE_SIGN_X ? 0xFFFFFF00 : 0) | xm;
+        int32_t delta_y = (state & PS2_MOUSE_SIGN_Y ? 0xFFFFFF00 : 0) | ym;
+
+        if ( left )   kprintf("left ");
+        if ( center ) kprintf("center ");
+        if ( right )  kprintf("right ");
+        kprintf("%d %d\n", delta_x, delta_y);
+    }
+}
+
 // Called whenever PS/2 mouse throw an interrupt
 void ps2_mouse_interrupt(irq_regs_t* frame) {
-    bool left, center, right;
-
-    uint8_t state = ps2_read_data();
-    uint8_t xm = ps2_read_data();
-    uint8_t ym = ps2_read_data();
-
-    left = state & PS2_MOUSE_LEFT;
-    center = state & PS2_MOUSE_CENTER;
-    right = state & PS2_MOUSE_RIGHT;
-
-    // Im 99% sure this is completely incorrect maths.
-    int16_t delta_x = xm + ((state >> 6) & 1);
-    delta_x = (state & PS2_MOUSE_SIGN_X) ? -delta_x : delta_x;
-
-    int16_t delta_y = ym + ((state >> 7) & 1);
-    delta_y = (state & PS2_MOUSE_SIGN_Y) ? -delta_y : delta_y;
-
-    if ( left ) kprintf("left ");
-    if ( center ) kprintf("center ");
-    if ( right ) kprintf("right ");
-    kprintf("%d %d\n", delta_x, delta_y);
-
-    ps2_flush_buffer();
+    while ( (ps2_read_status() & PS2_STAT_OUTPUT) != 0 ) {
+        ps2_mouse_read();
+    }
 }
 
 

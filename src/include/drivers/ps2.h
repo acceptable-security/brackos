@@ -76,8 +76,8 @@
 
 // Bits in the PS/2 Mouse state byte
 #define PS2_MOUSE_LEFT       (1 << 0)
-#define PS2_MOUSE_CENTER     (1 << 1)
-#define PS2_MOUSE_RIGHT      (1 << 2)
+#define PS2_MOUSE_RIGHT      (1 << 1)
+#define PS2_MOUSE_CENTER     (1 << 2)
 #define PS2_MOUSE_SIGN_X     (1 << 4)
 #define PS2_MOUSE_SIGN_Y     (1 << 5)
 #define PS2_MOUSE_OVERFLOW_X (1 << 6)

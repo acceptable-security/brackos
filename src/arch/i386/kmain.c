@@ -61,7 +61,7 @@ void load_memory(multiboot_info_t* multiboot, unsigned long kernel_heap_start, u
 }
 
 // Load the interrupt routines
-void load_interrupts() {
+void load_interrupts(bool apic_overide) {
     idt_init();         // Intialize the Interrupt Descriptor Table
     idt_load();         // Load the intiailized IDT
 
@@ -70,16 +70,15 @@ void load_interrupts() {
     kprintf("enabling the pic\n");
     pic_enable(0x20, 0x28);
 
-    if ( acpi && apic_supported() ) {
+    if ( acpi && apic_supported() && !apic_overide ) {
         kprintf("enabling the apic\n");
 
         pic_disable();   // Disable the PIC
         lapic_enable();  // Enable the APIC
 
-        // Enable all 16 IRQ interrupts
-        for ( int i = 0; i < 16; i++ ) {
-            ioapic_enable_irq(i, 0x20 + i);
-        }
+        ioapic_enable_irq(acpi_irq_remap(0), 0x20 + 0);
+        ioapic_enable_irq(acpi_irq_remap(1), 0x20 + 1);
+        ioapic_enable_irq(acpi_irq_remap(12), 0x20 + 12);
 
         kprintf("apic enabled: %d\n", lapic_is_enabled());
     }
@@ -95,13 +94,13 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
         for ( ;; ) {}
     }
 
-    gdt_init();          // Initialize the global descriptor table
-    load_io();           // Load some I/O devices
+    gdt_init();             // Initialize the global descriptor table
     load_memory(multiboot, kernel_heap_start, kernel_heap_size); // Load memory
-    load_interrupts();  // Load interrupts
-    ps2_init();         // Setup PS/2 drivers
-    tss_init();         // Setup the task segment selector
-    clock_init();       // Setup the clock subsystem
+    load_io();              // Load some I/O devices
+    load_interrupts(false); // Load interrupts
+    ps2_init();             // Setup PS/2 drivers
+    tss_init();             // Setup the task segment selector
+    clock_init();           // Setup the clock subsystem
 
     // Setup tasks with the first being the late kernel
     task_init((uintptr_t) late_kernel_main);

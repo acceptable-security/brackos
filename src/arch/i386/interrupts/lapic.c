@@ -96,7 +96,15 @@ void lapic_enable_spurious_interrupt(uint32_t intr) {
 
 // Get the current in service routine for the current lapic
 int lapic_inservice_routine() {
-    return __builtin_ctz(lapic_register_readl(APIC_REG_INSERVICE_ROUTINE));
+    for ( int i = 0; i < 8; i++ ) {
+        uint32_t isr = lapic_register_readl(APIC_REG_INSERVICE_ROUTINE + (0x10 * i));
+
+        if ( isr > 0 ) {
+            return ((i * 32) + __builtin_ctz(isr)) - 0x20;
+        }
+    }
+
+    return -1;
 }
 
 // Clear error status register
