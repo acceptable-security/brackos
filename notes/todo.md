@@ -3,28 +3,28 @@
     - [x] early kmalloc
     - [x] Page frame allocator
     - [x] Virtual memory mapper
-    - [ ] Virtual address allocator
-    - [ ] late kmalloc
+    - [x] Virtual address allocator
+    - [x] late kmalloc
     - [ ] Page compression
     - [ ] Copy on Write
     - [ ] Swapping
     - [ ] page directory cloning and swapping
 - Interrupts
-    - [ ] RSDP parser
-    - [ ] ACPI parser
-    - [ ] FADT parser
-    - [ ] APIC handler
-    - [ ] IDT
+    - [x] RSDP parser
+    - [x] ACPI parser
+    - [x] FADT parser
+    - [x] APIC handler
+    - [x] IDT
     - [ ] syscalls
 - virtual file system
     - [ ] ???
 - user space
-    - [ ] scheduler
-    - [ ] context switcher
-    - [ ] initial process
+    - [x] scheduler
+    - [x] context switcher
+    - [x] initial process
     - [ ] port of gcc
 - devices
     - [ ] vesa
-    - [ ] keyboard
-    - [ ] mouse
+    - [x] keyboard
+    - [x] mouse
     - [ ] tty
