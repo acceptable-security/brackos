@@ -6,12 +6,17 @@
 #include <mem/vasa.h>
 #include <kprint.h>
 
-extern uintptr_t ap_boot;
-extern uintptr_t ap_boot_size;
+extern uintptr_t ap_boot_init;
+extern uintptr_t ap_boot_end;
 
 bool smp_setup_trampoline() {
-    if ( ap_boot_size > 0x1000 ) {
-        kprintf("ap trampoline over a page (%x). skipping.\n", ap_boot_size);
+    uint32_t start = (uint32_t) &ap_boot_init;
+    uint32_t end = (uint32_t) &ap_boot_end;
+
+    uint32_t size = end - start;
+
+    if ( size > 0x1000 ) {
+        kprintf("ap trampoline over a page (%x). skipping.\n", size);
         return false;
     }
 
@@ -31,7 +36,7 @@ bool smp_setup_trampoline() {
         return false;
     }
 
-    memcpy(virt, (void*) ap_boot, ap_boot_size);
+    memcpy(virt, (void*) start, size);
     return true;
 }
 

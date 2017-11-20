@@ -1,23 +1,21 @@
-global ap_boot
-global ap_boot_size
+global ap_boot_init
+global ap_boot_end
 
 extern our_gdt_phys
 extern initial_pd, initial_pd_real
-global ap_boot
 
 ap_stack_size equ 0x4000
 ap_stack_end  equ ap_stack_size + ap_stack
+
 
 section .bss
 align 32
 ap_stack:
     resb ap_stack_size
 
-
-[BITS 16]
 section .text
-
-ap_boot:
+[BITS 16]
+ap_boot_init:
     ; Make sure interrupts are off
     cli
 
@@ -47,9 +45,9 @@ ap_boot:
 
 [BITS 32]
     ; Far jump to protected mode
-    jmp 0x08:.ap_boot_pmode_nopaging
+    jmp 0x08:ap_boot_pmode_nopaging
 
-.ap_boot_pmode_nopaging:
+ap_boot_pmode_nopaging:
     ; Load physical address of initial paging directory into cr3
     mov ecx, initial_pd_real
     mov cr3, ecx
@@ -65,10 +63,11 @@ ap_boot:
     mov cr0, ecx
 
     ; Long jump into the higher half
-    lea ecx, [.ap_boot_pmode_paging]
+    lea ecx, [ap_boot_pmode_paging]
     jmp ecx
 
-.ap_boot_pmode_paging:
+ap_boot_pmode_paging:
     jmp $
     hlt
-ap_boot_size equ $ - ap_boot - 1
+ap_boot_end:
+ap_boot_size equ $ - ap_boot_init - 1
