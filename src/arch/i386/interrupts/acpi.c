@@ -14,6 +14,7 @@
 #define ACPI_SIGNATURE_HPET  0x48504554
 
 extern unsigned long kernel_base;
+uint32_t cpu_count = 0;
 
 uint32_t acpi_irq_redir[16] = {
     0xFFFFFFFF,
@@ -87,6 +88,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
     uintptr_t records_head = records_start;
 
     bool complete = false;
+    cpu_count = 0;
 
     while ( records_head < records_end && !complete ) {
         uint8_t type = *(uint8_t*) records_head;
@@ -102,6 +104,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 }
 
                 kprintf("Found processor #%d (0x%x)\n", lapic->processor_id, lapic->flags);
+                cpu_count++;
                 records_head += lapic->length;
                 break;
             }

@@ -3,10 +3,12 @@ global ap_boot_end
 
 extern our_gdt_phys
 extern initial_pd, initial_pd_real
+extern cpu_ready
+extern ap_main
 
 ap_stack_size equ 0x4000
 ap_stack_end  equ ap_stack_size + ap_stack
-
+ap_boot_pmode_nopaging_real equ ap_boot_pmode_nopaging - 0xC0000000
 
 section .bss
 align 32
@@ -19,23 +21,28 @@ ap_boot_init:
     ; Make sure interrupts are off
     cli
 
-    ; Enable the A20 gate
-    in al, 0x92
-    or al, 0x02
-    out 0x92, al
-
-    mov esp, ap_stack_end
-
     ; Load the GDT
     mov eax, our_gdt_phys
     lgdt [eax]
+
+    ; Enable the A20 gate
+    in al, 0x92
+    or al, 2
+    out 0x92, al
 
     ; Enable Protected Mode
     mov eax, cr0
     or al, 1
     mov cr0, eax
 
-    ; Setup the things I forget the names of
+    ; Far jump to protected mode
+    jmp 0x08:dword ap_boot_pmode_nopaging_real
+
+[BITS 32]
+ap_boot_pmode_nopaging:
+    mov esp, ap_stack_end
+
+    ; Setup the segments
     mov ax, 0x10
     mov ds, ax
     mov es, ax
@@ -43,11 +50,6 @@ ap_boot_init:
     mov gs, ax
     mov ss, ax
 
-[BITS 32]
-    ; Far jump to protected mode
-    jmp 0x08:ap_boot_pmode_nopaging
-
-ap_boot_pmode_nopaging:
     ; Load physical address of initial paging directory into cr3
     mov ecx, initial_pd_real
     mov cr3, ecx
@@ -67,7 +69,10 @@ ap_boot_pmode_nopaging:
     jmp ecx
 
 ap_boot_pmode_paging:
+    call ap_main
+
     jmp $
     hlt
+
 ap_boot_end:
 ap_boot_size equ $ - ap_boot_init - 1

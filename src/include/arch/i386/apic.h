@@ -10,6 +10,9 @@ void lapic_eoi();
 void lapic_enable();
 bool lapic_is_enabled();
 int lapic_inservice_routine();
+uint32_t lapic_get_id();
+void lapic_send_init(uint32_t apic);
+void lapic_send_startup(uint32_t apic, uint32_t vec);
 
 // I/O APIC commands
 void ioapic_register_writel(uint8_t offset, uint32_t val);
