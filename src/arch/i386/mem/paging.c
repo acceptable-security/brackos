@@ -119,7 +119,7 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
     if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PSE) ) {
         // remapping an already mapped page
         // TODO - panic?
-        kprintf("this page is already mapped in a PSE page\n");
+        kprintf("paging: this page is already mapped in a PSE page\n");
         return false;
     }
 
@@ -131,7 +131,7 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
         }
 
         // Don't remap the same page
-        kprintf("this page is already mapped\n");
+        kprintf("paging: this page is already mapped\n");
         return false;
     }
 
@@ -148,7 +148,7 @@ bool paging_unmap(uintptr_t virt) {
     if ( !PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
         // attempting to unmap a nonexistant page table
         // TODO - panic?
-        kprintf("attempted to unmap from a nonexistant page table.\n");
+        kprintf("paging: attempted to unmap from a nonexistant page table.\n");
         return false;
     }
 
@@ -172,7 +172,7 @@ bool paging_unmap(uintptr_t virt) {
 
     // If the page table is now empty, release it.
     if ( page_count == 0 ) {
-        kprintf("page table empty, releasing...\n");
+        kprintf("paging: page table empty, releasing...\n");
         uintptr_t page = ((uintptr_t) page_directory_table->tables[dir_ent]) & ~0xFFF;
         frame_dealloc((void*) page, 1);
         page_directory_table->tables[dir_ent] = 0;

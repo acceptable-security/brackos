@@ -339,6 +339,6 @@ void vasa_init(void* start, unsigned long length) {
 // Switch the VASA to using a cache
 void vasa_switch() {
     if ( mem_cache_new("cache_vasa", sizeof(vasa_node_t), 1, NULL, NULL) != NULL ) {
-        kprintf("initiated the cache_vasa\n");
+        kprintf("vasa: initiated the cache_vasa\n");
     }
 }

@@ -34,7 +34,7 @@ void idt_load() {
     idtp.base = (uintptr_t) &gates;
 
     __asm__( "lidt %0" : : "g"(idtp) );
-    kprintf("idt %p loaded\n", &idtp);
+    kprintf("idt: %p loaded\n", &idtp);
 }
 
 // Create an initial empty IDT
@@ -45,5 +45,5 @@ void idt_init() {
         idt_set_gate(i, (uintptr_t) idt_empty_entry, 0x08, 0x8E);
     }
 
-    kprintf("idt setup\n");
+    kprintf("idt: setup complete\n");
 }

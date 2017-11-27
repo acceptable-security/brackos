@@ -28,10 +28,10 @@ const char* exception_strs[] = {
 
 void exception_handle(irq_regs_t* frame, int error) {
     if ( error > 19 ) {
-        kprintf("CPU Exception: invalid (%d) @ %p\n", error, frame);
+        kprintf("exceptions: invalid (%d) @ %p\n", error, frame);
     }
     else {
-        kprintf("CPU Exception: %s @ %p\n", exception_strs[error], frame);
+        kprintf("exceptions: %s @ %p\n", exception_strs[error], frame);
     }
 
     if ( frame != NULL ) {
@@ -46,5 +46,5 @@ void exception_init() {
         idt_set_gate(i, (uintptr_t) exception_handle, 0x08, 0x8E);
     }
 
-    kprintf("exceptions setup\n");
+    kprintf("exceptions: setup complete\n");
 }

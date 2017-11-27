@@ -41,7 +41,7 @@ void pic_enable(unsigned int master_offset, unsigned int slave_offset) {
     outportb(PIC_DATA_2, slave_mask);
     io_wait();
 
-    kprintf("pic setup\n");
+    kprintf("pic: setup complete\n");
 }
 
 // Disable the PIC

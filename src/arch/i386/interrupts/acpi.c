@@ -81,7 +81,7 @@ bool acpi_validate(void* ptr, unsigned long len) {
 
 // Parse the Multi APIC Descriptor Table
 void acpi_parse_madt(acpi_madt_t* madt) {
-    kprintf("local apic address: %x\n", madt->local_controller_address);
+    kprintf("acpi: local apic at %x\n", madt->local_controller_address);
     uintptr_t records_start = ((uintptr_t) madt) + sizeof(acpi_madt_t);
     uintptr_t records_end = records_start + (madt->table.length - sizeof(acpi_madt_t));
 
@@ -98,12 +98,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_lapic_t* lapic = (acpi_madt_lapic_t*) records_head;
 
                 if ( lapic->length == 0 ) {
-                    kprintf("Found zero length record\n");
+                    kprintf("acpi: Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("Found processor #%d (0x%x)\n", lapic->processor_id, lapic->flags);
+                kprintf("acpi: Found processor #%d (0x%x)\n", lapic->processor_id, lapic->flags);
                 cpu_count++;
                 records_head += lapic->length;
                 break;
@@ -113,12 +113,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_ioapic_t* ioapic = (acpi_madt_ioapic_t*) records_head;
 
                 if ( ioapic->length == 0 ) {
-                    kprintf("Found zero length record\n");
+                    kprintf("acpi: Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("Found I/O APIC %d\n", ioapic->id);
+                kprintf("acpi: Found I/O APIC %d\n", ioapic->id);
                 ioapic_setup(ioapic->address);
                 records_head += ioapic->length;
                 break;
@@ -128,13 +128,13 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_iso_t* iso = (acpi_madt_iso_t*) records_head;
 
                 if ( iso->length == 0 ) {
-                    kprintf("Found zero length record\n");
+                    kprintf("acpi: Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("Found Interrupt Source Overide\n");
-                kprintf("- bus %d intr#%d -> intr#%d (%x)\n", iso->bus_src, iso->irq_src, iso->interrupt, iso->flags);
+                kprintf("acpi: Found Interrupt Source Overide\n");
+                kprintf("acpi: - bus %d intr#%d -> intr#%d (%x)\n", iso->bus_src, iso->irq_src, iso->interrupt, iso->flags);
                 acpi_irq_redir[iso->irq_src] = iso->interrupt;
 
                 records_head += iso->length;
@@ -145,12 +145,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_nmi_t* nmi = (acpi_madt_nmi_t*) records_head;
 
                 if ( nmi->length == 0 ) {
-                    kprintf("Found zero length record\n");
+                    kprintf("acpi: Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("Found Nonmaskable Interrupt\n");
+                kprintf("acpi: Found Nonmaskable Interrupt\n");
                 records_head += nmi->length;
                 break;
             }
@@ -159,13 +159,13 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_lapic_nmi_t* lapic_nmi = (acpi_madt_lapic_nmi_t*) records_head;
 
                 if ( lapic_nmi->length == 0 ) {
-                    kprintf("Found zero length record\n");
+                    kprintf("acpi: Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("Found local APIC Nonmaskable Interrupt\n");
-                kprintf("- processor #%d interrupt #%d\n", lapic_nmi->processor_id, lapic_nmi->lint);
+                kprintf("acpi: Found local APIC Nonmaskable Interrupt\n");
+                kprintf("acpi: - processor #%d interrupt #%d\n", lapic_nmi->processor_id, lapic_nmi->lint);
                 records_head += lapic_nmi->length;
                 break;
             }
@@ -174,12 +174,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_lapic_ao_t* lapic_ao = (acpi_madt_lapic_ao_t*) records_head;
 
                 if ( lapic_ao->length == 0 ) {
-                    kprintf("Found zero length record\n");
+                    kprintf("acpi: Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("Found local APIC Address Override\n");
+                kprintf("acpi: Found local APIC Address Override\n");
                 records_head += lapic_ao->length;
                 break;
             }
@@ -188,12 +188,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_io_sapic_t* io_sapic = (acpi_madt_io_sapic_t*) records_head;
 
                 if ( io_sapic->length == 0 ) {
-                    kprintf("Found zero length record\n");
+                    kprintf("acpi: Found zero length record\n");
                     complete = true;
                     break;
                 }
 
-                kprintf("Found I/O SAPIC\n");
+                kprintf("acpi: Found I/O SAPIC\n");
                 records_head += io_sapic->length;
                 break;
             }
@@ -202,7 +202,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 acpi_madt_local_sapic_t* local_sapic = (acpi_madt_local_sapic_t*) records_head;
 
                 if ( local_sapic->length == 0 ) {
-                    kprintf("Found zero length record\n");
+                    kprintf("acpi: Found zero length record\n");
                     complete = true;
                     break;
                 }
@@ -210,7 +210,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
                 // Load the address of the string into the string field
                 local_sapic->processor_uid_string = (uint8_t*) ((uintptr_t) &local_sapic->processor_uid_value + sizeof(uint32_t));
 
-                kprintf("Found local SAPIC\n");
+                kprintf("acpi: Found local SAPIC\n");
                 records_head += local_sapic->length;
                 break;
             }
@@ -219,12 +219,12 @@ void acpi_parse_madt(acpi_madt_t* madt) {
             case 8:
             case 9:
             case 10:
-                kprintf("Not yet implemented %d\n", type);
+                kprintf("acpi: Not yet implemented %d\n", type);
                 complete = true;
                 break;
 
             default:
-                kprintf("Found unknown %d\n", type);
+                kprintf("acpi: Found unknown %d\n", type);
                 records_head += 1;
                 break;
         }
@@ -235,7 +235,7 @@ void acpi_parse_madt(acpi_madt_t* madt) {
 void acpi_parse_fadt(acpi_fadt_t* fadt) {
     // Make sure ACPI is enabled
     if ( fadt->smi_cmd_port == 0 || (fadt->acpi_enable == 0 && fadt->acpi_disable == 0) ) {
-        kprintf("acpi enabled\n");
+        kprintf("acpi: enabled\n");
     }
     else {
         uint8_t res = inportw(fadt->pm1a_ctrl_block) & 1;
@@ -250,10 +250,10 @@ void acpi_parse_fadt(acpi_fadt_t* fadt) {
                 // ... TODO: if this doesn't work?
             }
 
-            kprintf("acpi enabled\n");
+            kprintf("acpi: enabled\n");
         }
         else {
-            kprintf("acpi enabled\n");
+            kprintf("acpi: enabled\n");
         }
     }
 }
@@ -261,7 +261,7 @@ void acpi_parse_fadt(acpi_fadt_t* fadt) {
 // Parse the Root System Descriptor Table
 bool acpi_parse_rsdt(acpi_rsdt_t* rsdt) {
     if ( !acpi_validate(rsdt, rsdt->table.length) ) {
-        kprintf("ACPI: failed to validate rsdt\n");
+        kprintf("acpi: failed to validate rsdt\n");
         return false;
     }
 
@@ -273,7 +273,7 @@ bool acpi_parse_rsdt(acpi_rsdt_t* rsdt) {
         acpi_sdt_t* sdt = acpi_map_ptr((void*) phys_sdt, sizeof(acpi_sdt_t));
 
         if ( sdt == NULL ) {
-            kprintf("Failed to map!\n");
+            kprintf("acpi: Failed to map!\n");
             continue;
         }
 
@@ -285,7 +285,7 @@ bool acpi_parse_rsdt(acpi_rsdt_t* rsdt) {
 
 // Parse the High Precision Event Timer table
 void acpi_parse_hpet(acpi_hpet_t* hpet) {
-    kprintf("hpet #%d\n", hpet->number);
+    kprintf("acpi: hpet #%d\n", hpet->number);
 }
 
 // Find the correct SDT parser based off of signature
@@ -297,27 +297,27 @@ void acpi_parse_table(acpi_sdt_t* ptr) {
 
     switch ( name ) {
         case ACPI_SIGNATURE_RSDT:
-            kprintf("Found Root System Descriptor Table!\n");
+            kprintf("acpi: Found Root System Descriptor Table!\n");
             acpi_parse_rsdt((acpi_rsdt_t*) ptr);
             break;
 
         case ACPI_SIGNATURE_FADP:
-            kprintf("Found Fixed Address Descriptor Table!\n");
+            kprintf("acpi: Found Fixed Address Descriptor Table!\n");
             acpi_parse_fadt((acpi_fadt_t*) ptr);
             break;
 
         case ACPI_SIGNATURE_APIC:
-            kprintf("Found the Multiple APIC Descriptor Table!\n");
+            kprintf("acpi: Found the Multiple APIC Descriptor Table!\n");
             acpi_parse_madt((acpi_madt_t*) ptr);
             break;
 
         case ACPI_SIGNATURE_HPET:
-            kprintf("Found the High Precision Event Timer!\n");
+            kprintf("acpi: Found the High Precision Event Timer!\n");
             acpi_parse_hpet((acpi_hpet_t*) ptr);
             break;
 
         default:
-            kprintf("Found unknown table: %c%c%c%c\n", ptr->signature[0], ptr->signature[1], ptr->signature[2], ptr->signature[3]);
+            kprintf("acpi: Found unknown table: %c%c%c%c\n", ptr->signature[0], ptr->signature[1], ptr->signature[2], ptr->signature[3]);
             break;
     }
 }
@@ -336,12 +336,12 @@ bool acpi_init() {
     rsdp_desc_t* rsdp = rsdp_locate();
 
     if ( rsdp == NULL ) {
-        kprintf("ACPI: failed to find RSDP");
+        kprintf("acpi: failed to find RSDP");
         return false;
     }
 
     if ( !acpi_validate(rsdp, sizeof(rsdp_desc_t)) ) {
-        kprintf("ACPI: failed to validate RSDP");
+        kprintf("acpi: failed to validate RSDP");
         return false;
     }
 
@@ -350,7 +350,7 @@ bool acpi_init() {
     acpi_rsdt_t* rsdt = acpi_map_ptr((void*) rsdp->rsdt, sizeof(acpi_rsdt_t));
 
     if ( rsdt == NULL ) {
-        kprintf("ACPI: failed to map rsdt\n");
+        kprintf("acpi: failed to map rsdt\n");
         return false;
     }
 

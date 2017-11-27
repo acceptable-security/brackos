@@ -42,12 +42,12 @@ mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, unsigned 
                                                                        mem_callback_t* construct,
                                                                        mem_callback_t* destruct) {
     if ( strlen(name) >= CACHE_NAME_MAXLEN ) {
-        kprintf("mem cache name to big!\n");
+        kprintf("slab: mem cache name to big!\n");
         return NULL;
     }
 
     if ( object_size >= SLAB_SIZE - sizeof(mem_cache_t) ) {
-        kprintf("object size is too big!\n");
+        kprintf("slab: object size is too big!\n");
         return NULL;
     }
 
@@ -55,7 +55,7 @@ mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, unsigned 
     mem_cache_t* cache = mem_cache_alloc("cache_cache");
 
     if ( cache == NULL ) {
-        kprintf("failed to allocate new cache!\n");
+        kprintf("slab: failed to allocate new cache!\n");
         return NULL;
     }
 
@@ -180,7 +180,7 @@ void* mem_cache_alloc(const char* name) {
     }
 
     if ( cache == NULL ) {
-        kprintf("couldn't find cache %s!\n", name);
+        kprintf("slab: couldn't find cache %s!\n", name);
         return NULL;
     }
 

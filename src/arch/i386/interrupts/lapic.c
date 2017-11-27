@@ -164,18 +164,18 @@ void lapic_enable() {
     // Hardware enable APIC
     uintptr_t base = lapic_get_base();
 
-    kprintf("lapic base: %x\n", base);
-    kprintf("lapic is x2apic: %d\n", lapic_is_x2apic());
+    kprintf("lapic: base is %x\n", base);
+    kprintf("lapic: x2apic status %d\n", lapic_is_x2apic());
 
     uintptr_t virt = (uintptr_t) vasa_alloc(MEM_PCI, 4096, 0);
 
     if ( virt == 0 ) {
-        kprintf("failed to allocate a lapic virt addr\n");
+        kprintf("lapic: failed to allocate a lapic virt addr\n");
         return;
     }
 
     if ( !paging_map(base, virt, PAGE_PRESENT | PAGE_RW) ) {
-        kprintf("failed to map the lapic in\n");
+        kprintf("lapic: failed to map the lapic in\n");
         return;
     }
 
@@ -190,7 +190,7 @@ void lapic_enable() {
     lapic_enable_spurious_interrupt(0xFF);
 
 
-    kprintf("local apic setup at %p.\n", lapic_base);
-    kprintf("local apic id: %d\n", (lapic_register_readl(APIC_REG_ID) >> 24));
-    kprintf("local apic version: %x\n", lapic_register_readl(APIC_REG_VERSION));
+    kprintf("lapic: setup at %p.\n", lapic_base);
+    kprintf("lapic: id %d\n", (lapic_register_readl(APIC_REG_ID) >> 24));
+    kprintf("lapic: version is %x\n", lapic_register_readl(APIC_REG_VERSION));
 }

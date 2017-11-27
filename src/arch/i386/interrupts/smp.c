@@ -18,17 +18,20 @@ void ap_main() {
 }
 
 bool smp_setup_trampoline() {
+    // Get the start and end of the ap boot code
     uint32_t start = (uint32_t) &ap_boot_init;
     uint32_t end = (uint32_t) &ap_boot_end;
 
+    // Calculate the size
     uint32_t size = end - start;
 
+    // Make sure it's a single page
     if ( size > 0x1000 ) {
         kprintf("smp: ap trampoline over a page (%x). skipping.\n", size);
         return false;
     }
 
-    // Located in the 8th page
+    // Located in the 7th page
     uintptr_t ap_trampoline = 0x7000;
 
     // Get a virtual address for it
@@ -44,9 +47,12 @@ bool smp_setup_trampoline() {
         return false;
     }
 
+    // Copy the code
     memcpy(virt, (void*) start, size);
     return true;
 }
+
+// TODO - deallocate the ap trampoline after all APs are initialized
 
 void smp_init() {
     kprintf("smp: enabling...\n");

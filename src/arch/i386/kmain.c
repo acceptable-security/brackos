@@ -100,7 +100,6 @@ void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, uns
     load_memory(multiboot, kernel_heap_start, kernel_heap_size); // Load memory
     load_io();              // Load some I/O devices
     load_interrupts(false); // Load interrupts
-    kprintf("gdt physical: %p\n", our_gdt_phys);
     ps2_init();             // Setup PS/2 drivers
     tss_init();             // Setup the task segment selector
     clock_init();           // Setup the clock subsystem

@@ -40,7 +40,7 @@ bool frame_buddy_check(uintptr_t a, uintptr_t b, size_t size) {
 // Add a free chunk into a certain free list
 void frame_add_free_item(uintptr_t address, size_t count, bool new_item) {
     if ( count > MAX_FRAMES ) {
-        kprintf("%d > %d (max frames)\n", count, MAX_FRAMES);
+        kprintf("frame: %d > %d (max frames)\n", count, MAX_FRAMES);
         return;
     }
 
@@ -188,6 +188,6 @@ void frame_init() {
     if ( mem_cache_new("cache_pfa_node", sizeof(frame_node_t), MAX_FRAMES + 1, NULL, NULL) != NULL ) {
         cache_init = true;
 
-        kprintf("initiated the cache_pfa_node\n");
+        kprintf("frame: initiated the cache_pfa_node\n");
     }
 }

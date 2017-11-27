@@ -108,7 +108,7 @@ void ioapic_enable_irq(uint32_t irq, uint8_t vector) {
     redir.destination = 0;
 
     ioapic_set_redirect_entry(irq, redir);
-    kprintf("IOAPIC: mapping IRQ#%d to interrupt %d\n", irq, vector);
+    kprintf("ioapic: mapping IRQ#%d to interrupt %d\n", irq, vector);
 }
 
 // Initialize the I/O APIC but disable everything
@@ -126,10 +126,10 @@ void ioapic_setup(uintptr_t base) {
     // Virtual page + page offset
     ioapic_base = virt;
 
-    kprintf("IOAPIC: setup at 0x%x (previously 0x%x)\n", ioapic_base, base);
-    kprintf("IOAPIC: ID: %d\n", ioapic_get_id());
-    kprintf("IOAPIC: version: 0x%x\n", ioapic_get_version());
-    kprintf("IOAPIC: IRQ#: %d\n", ioapic_get_irqs());
+    kprintf("ioapic: setup at 0x%x (previously 0x%x)\n", ioapic_base, base);
+    kprintf("ioapic: ID: %d\n", ioapic_get_id());
+    kprintf("ioapic: version: 0x%x\n", ioapic_get_version());
+    kprintf("ioapic: IRQ#: %d\n", ioapic_get_irqs());
 
     // Disable all interrupts
     for ( int i = 0; i < ioapic_get_irqs(); i++ ) {
@@ -140,5 +140,5 @@ void ioapic_setup(uintptr_t base) {
         ioapic_set_redirect_entry(i, redir);
     }
 
-    kprintf("IOAPIC: all entries disabled.\n");
+    kprintf("ioapic: all entries disabled.\n");
 }

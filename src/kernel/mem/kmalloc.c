@@ -56,7 +56,7 @@ void kfree(void* addr) {
 
 void kmem_swap() {
     void* end = early_kmalloc_end();
-    kprintf("Ended early kernel mem at %p\n", end);
+    kprintf("kmalloc: Ended early kernel mem at %p\n", end);
     kernel_mem_end = (uintptr_t) end;
     kern_mem_early = false;
 }

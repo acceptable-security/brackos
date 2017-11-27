@@ -97,5 +97,5 @@ bool clock_add_once_off(uint32_t time, clock_callback_t* callback) {
 
 void clock_init() {
     root = NULL;
-    kprintf("clock setup\n");
+    kprintf("clock: setup complete\n");
 }
