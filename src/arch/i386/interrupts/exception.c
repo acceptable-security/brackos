@@ -1,4 +1,5 @@
 #include <arch/i386/idt.h>
+#include <arch/i386/apic.h>
 #include <arch/i386/irq.h>
 #include <kprint.h>
 #include <stdint.h>
@@ -33,6 +34,8 @@ void exception_handle(irq_regs_t* frame, int error) {
     else {
         kprintf("exceptions: %s @ %p\n", exception_strs[error], frame);
     }
+
+    kprintf("cpu %d\n", lapic_get_id());
 
     if ( frame != NULL ) {
         irq_regs_print(frame);

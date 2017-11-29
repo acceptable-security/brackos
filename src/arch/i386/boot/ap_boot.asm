@@ -5,6 +5,8 @@ extern our_gdt_phys
 extern initial_pd, initial_pd_real
 extern cpu_ready
 extern ap_main
+extern lapic_get_id
+extern ap_stacks
 
 ap_stack_size equ 0x4000
 ap_stack_end  equ ap_stack_size + ap_stack
@@ -40,8 +42,6 @@ ap_boot_init:
 
 [BITS 32]
 ap_boot_pmode_nopaging:
-    mov esp, ap_stack_end
-
     ; Setup the segments
     mov ax, 0x10
     mov ds, ax
@@ -69,6 +69,16 @@ ap_boot_pmode_nopaging:
     jmp ecx
 
 ap_boot_pmode_paging:
+    ; Use temporary stack
+    mov esp, ap_stack_end
+
+    ; Get current id in eax
+    xor eax, eax
+    call lapic_get_id
+
+    ; Load our stack
+    mov esp, [ap_stacks + eax * 4]
+
     call ap_main
 
     jmp $

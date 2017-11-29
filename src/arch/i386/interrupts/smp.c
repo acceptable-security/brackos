@@ -3,18 +3,44 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mem/mmap.h>
 #include <mem/vasa.h>
 #include <kprint.h>
 
+// Location of the ap trampoline code
 extern uintptr_t ap_boot_init;
 extern uintptr_t ap_boot_end;
+
 extern uint32_t cpu_count;
+
+// Used for allocating stacks for each AP
+void** ap_stacks;
+extern uint32_t stack_size;
 
 volatile uint32_t cpu_ready = 0;
 
 void ap_main() {
+    void* test = NULL;
     cpu_ready++;
     kprintf("smp: hello from cpu %d, booted number %d\n", lapic_get_id(), cpu_ready);
+    kprintf("smp: %x\n", (void*) &test);
+    while(1) {}
+}
+
+// Allocate the AP stacks
+void smp_alloc_stack() {
+    kprintf("smp: allocating stacks...\n");
+
+    ap_stacks = kmalloc(sizeof(void*) * cpu_count);
+
+    for ( int i = 0; i < cpu_count; i++ ) {
+        if ( i == lapic_get_id() ) {
+            ap_stacks[i] = NULL;
+        }
+        else {
+            ap_stacks[i] = memmap(NULL, stack_size, MMAP_URGENT);
+        }
+    }
 }
 
 bool smp_setup_trampoline() {
@@ -60,6 +86,8 @@ void smp_init() {
     if ( !smp_setup_trampoline() ) {
         return;
     }
+
+    smp_alloc_stack();
 
     kprintf("smp: trampoline setup...\n");
 
