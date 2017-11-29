@@ -1,7 +1,8 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #define CACHE_NAME_MAXLEN 32
-#define SLAB_SIZE 0x1000 // slab size == page size for now.
+#define SLAB_SIZE 0x2000 // slab size == page size for now.
 
 typedef void (mem_callback_t)(void* object);
 
@@ -49,4 +50,4 @@ void mem_cache_dealloc(const char* name, void* object);
 
 void kmalloc_init();
 void* _kmalloc(unsigned int size);
-void _kfree(void* ptr);
+bool _kfree(void* ptr);
