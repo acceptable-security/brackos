@@ -14,7 +14,7 @@ void* kmalloc(unsigned long count) {
     if ( kern_mem_early ) {
         return early_kmalloc(count);
     }
-    else {
+    else if ( count <= 4096 ) {
         return _kmalloc(count);
     }
 }
@@ -49,8 +49,8 @@ void kfree(void* addr) {
     if ( kern_mem_early && (uintptr_t) addr < kernel_mem_end ) {
         return;
     }
-    else {
-        _kfree(addr);
+    else if ( !_kfree(addr) ) {
+        // TODO - handle large allocation
     }
 }
 
