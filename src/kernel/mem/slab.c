@@ -34,7 +34,8 @@ mem_kmalloc_block_t kmalloc_sizes[] = {
     { .size = 768,  .name = "kmalloc768"},
     { .size = 1024, .name = "kmalloc1024"},
     { .size = 1363, .name = "kmalloc1363"},
-    { .size = 2048, .name = "kmalloc2048" }
+    { .size = 2048, .name = "kmalloc2048"},
+    { .size = 4096, .name = "kmalloc4096"},
 };
 
 // Create a new cache
@@ -408,12 +409,13 @@ void* _krealloc(void* ptr, unsigned long size) {
 }
 
 // kfree for small pointers
-void _kfree(void* ptr) {
+bool _kfree(void* ptr) {
     mem_kmalloc_block_t block =_kmalloc_get_block(ptr);
 
     if ( block.size == 0 ) {
-        return;
+        return false;
     }
 
     mem_cache_dealloc(block.name, ptr);
+    return true;
 }
