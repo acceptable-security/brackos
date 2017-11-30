@@ -22,7 +22,7 @@ volatile uint32_t cpu_ready = 0;
 void ap_main() {
     cpu_ready++;
 
-    uintptr_t stack;
+    uintptr_t stack = 0;
     __asm__ volatile ("movl %%ebp, %0" : "=r" (stack) );
 
     if ( stack != ap_stack_list[lapic_get_id()] ) {
