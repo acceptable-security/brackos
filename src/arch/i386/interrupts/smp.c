@@ -17,6 +17,9 @@ extern uint32_t cpu_count;
 uintptr_t* ap_stack_list;
 extern uint32_t stack_size;
 
+// Virtual address of AP Trampoline code
+void* trampoline_virt;
+
 volatile uint32_t cpu_ready = 0;
 
 void ap_main() {
@@ -71,24 +74,34 @@ bool smp_setup_trampoline() {
     uintptr_t ap_trampoline = 0x7000;
 
     // Get a virtual address for it
-    void* virt = vasa_alloc(MEM_PCI, 4096, 0);
+    trampoline_virt = vasa_alloc(MEM_PCI, 4096, 0);
 
-    if ( virt == NULL ) {
+    if ( trampoline_virt == NULL ) {
         kprintf("smp: failed to allocate virtual address for trampoline.\n");
         return false;
     }
 
     // Map it
-    if ( !paging_map(ap_trampoline, (uintptr_t) virt, PAGE_PRESENT | PAGE_RW) ) {
+    if ( !paging_map(ap_trampoline, (uintptr_t) trampoline_virt, PAGE_PRESENT | PAGE_RW) ) {
         return false;
     }
 
     // Copy the code
-    memcpy(virt, (void*) start, size);
+    memcpy(trampoline_virt, (void*) start, size);
     return true;
 }
 
-// TODO - deallocate the ap trampoline after all APs are initialized
+// Deallocate the ap trampoline after all APs are initialized
+void smp_destroy_trampoline() {
+    if ( trampoline_virt != NULL ) {
+        // Remove allocations and null pointer
+        paging_unmap((uintptr_t) trampoline_virt);
+        vasa_dealloc(trampoline_virt);
+        trampoline_virt = NULL;
+
+        kprintf("smp: trampoline removed.\n");
+    }
+}
 
 void smp_init() {
     kprintf("smp: enabling...\n");
@@ -121,4 +134,6 @@ void smp_init() {
     kprintf("smp: waiting on %d cpus\n", cpu_count - 1);
     while ( cpu_ready != (cpu_count - 1) ) {}
     kprintf("smp: all cpus are awake\n");
+
+    smp_destroy_trampoline();
 }
