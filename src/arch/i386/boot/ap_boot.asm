@@ -3,10 +3,9 @@ global ap_boot_end
 
 extern our_gdt_phys
 extern initial_pd, initial_pd_real
-extern cpu_ready
 extern ap_main
 extern lapic_get_id
-extern ap_stacks
+extern ap_stack_list
 
 ap_stack_size equ 0x4000
 ap_stack_end  equ ap_stack_size + ap_stack
@@ -72,12 +71,12 @@ ap_boot_pmode_paging:
     ; Use temporary stack
     mov esp, ap_stack_end
 
-    ; Get current id in eax
-    xor eax, eax
+    ; Get current cpu id in eax
     call lapic_get_id
 
     ; Load our stack
-    mov esp, [ap_stacks + eax * 4]
+    mov ebx, [ap_stack_list]
+    mov esp, [ebx + eax * 4]
 
     call ap_main
 

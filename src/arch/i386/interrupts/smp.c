@@ -14,31 +14,40 @@ extern uintptr_t ap_boot_end;
 extern uint32_t cpu_count;
 
 // Used for allocating stacks for each AP
-void** ap_stacks;
+uintptr_t* ap_stack_list;
 extern uint32_t stack_size;
 
 volatile uint32_t cpu_ready = 0;
 
 void ap_main() {
-    void* test = NULL;
     cpu_ready++;
+    uintptr_t stack;
+    __asm__ volatile ("movl %%esp, %0" : "=r" (stack) );
+
+    if ( stack != ap_stack_list[lapic_get_id()] ) {
+        kprintf("smp: failed to properly set stack\n");
+        kprintf("smp: expected %p got %p\n", ap_stack_list[lapic_get_id()], stack);
+        while(1){}
+    }
+
     kprintf("smp: hello from cpu %d, booted number %d\n", lapic_get_id(), cpu_ready);
-    kprintf("smp: %x\n", (void*) &test);
+    kprintf("smp: stack at %p\n", stack);
     while(1) {}
 }
 
 // Allocate the AP stacks
 void smp_alloc_stack() {
-    kprintf("smp: allocating stacks...\n");
+    kprintf("smp: allocating stacks of size %d...\n", stack_size);
 
-    ap_stacks = kmalloc(sizeof(void*) * cpu_count);
+    ap_stack_list = kmalloc(sizeof(void*) * cpu_count);
 
     for ( int i = 0; i < cpu_count; i++ ) {
         if ( i == lapic_get_id() ) {
-            ap_stacks[i] = NULL;
+            ap_stack_list[i] = 0;
         }
         else {
-            ap_stacks[i] = memmap(NULL, stack_size, MMAP_URGENT);
+            ap_stack_list[i] = (uintptr_t) memmap(NULL, stack_size, MMAP_URGENT);
+            kprintf("cpu #%d stack at %p\n", i, ap_stack_list[i]);
         }
     }
 }

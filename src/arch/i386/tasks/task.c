@@ -175,6 +175,7 @@ void task_init(uintptr_t initial_task_fn) {
 
     if ( initial_task == NULL ) {
         kprintf("failed to make initial task\n");
+        return;
     }
 
 
