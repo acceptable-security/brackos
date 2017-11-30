@@ -21,8 +21,9 @@ volatile uint32_t cpu_ready = 0;
 
 void ap_main() {
     cpu_ready++;
+
     uintptr_t stack;
-    __asm__ volatile ("movl %%esp, %0" : "=r" (stack) );
+    __asm__ volatile ("movl %%ebp, %0" : "=r" (stack) );
 
     if ( stack != ap_stack_list[lapic_get_id()] ) {
         kprintf("smp: failed to properly set stack\n");
