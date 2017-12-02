@@ -283,6 +283,11 @@ void vasa_dealloc(void* ptr) {
 // Allocate virtual address space for a given memory type
 // Iterate through the VASA free list and find the first chunk of space that has enough to give.
 void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
+    if ( size == 0 ) {
+        kprintf("vasa: cannot allocate size 0\n");
+        return NULL;
+    }
+
     vasa_node_t* prev = NULL;
     vasa_node_t* head = global_asa.free_head;
 

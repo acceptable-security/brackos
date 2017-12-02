@@ -27,7 +27,7 @@ task_t* task_create(char* name) {
     task_t* task = (task_t*) kmalloc(sizeof(task_t));
 
     if ( task == NULL ) {
-        kprintf("failed to allocate task\n");
+        kprintf("tasks: failed to allocate task\n");
         return NULL;
     }
 
@@ -48,7 +48,7 @@ task_t* task_create(char* name) {
     task->int_stack_bottom = (uintptr_t) memmap(NULL, TASK_STACK_SIZE, MMAP_RW | MMAP_URGENT);
 
     if ( task->int_stack_bottom == 0 ) {
-        kprintf("task: failed to create task interrupt stack\n");
+        kprintf("tasks: failed to create task interrupt stack\n");
         kfree(task);
         return NULL;
     }
@@ -62,11 +62,11 @@ task_t* task_create(char* name) {
 
 // Create a task for the kernel
 task_t* task_kernel_create(char* name, uintptr_t address) {
-    kprintf("task: creating %s @ %p\n", name, address);
+    kprintf("tasks: creating %s @ %p\n", name, address);
     task_t* task = task_create(name);
 
     if ( task == NULL ) {
-        kprintf("failed to make kernel task\n");
+        kprintf("tasks: failed to make kernel task\n");
         return NULL;
     }
 
@@ -74,7 +74,7 @@ task_t* task_kernel_create(char* name, uintptr_t address) {
     task->stack_bottom = (uintptr_t) memmap(NULL, TASK_STACK_SIZE, MMAP_RW | MMAP_URGENT);
 
     if ( task->stack_bottom == 0 ) {
-        kprintf("task: failed to create stack\n");
+        kprintf("tasks: failed to create stack\n");
         task_dealloc(task);
         return NULL;
     }
@@ -114,19 +114,19 @@ void task_schedule(task_t* task) {
 void task_kill(pid_t pid) {
     // Sanity checking
     if ( pid < 0 || pid > MAX_TASKS ) {
-        kprintf("task: pid %d is out of range\n", pid);
+        kprintf("tasks: pid %d is out of range\n", pid);
         return;
     }
 
     task_t* task = task_pid_table[pid];
 
     if ( task == NULL ) {
-        kprintf("task: pid %d doesn't exist.\n", pid);
+        kprintf("tasks: pid %d doesn't exist.\n", pid);
         return;
     }
 
     if ( task->state == TASK_STATE_ZOMBIE ) {
-        kprintf("task: pid %d is already dead!\n", pid);
+        kprintf("tasks: pid %d is already dead!\n", pid);
         return;
     }
 
@@ -174,13 +174,13 @@ void task_init(uintptr_t initial_task_fn) {
     task_t* initial_task = task_kernel_create("A", initial_task_fn);
 
     if ( initial_task == NULL ) {
-        kprintf("failed to make initial task\n");
+        kprintf("tasks: failed to make initial task\n");
         return;
     }
 
 
-    kprintf("task: priming the scheduler...\n");
+    kprintf("tasks: priming the scheduler...\n");
     scheduler_init(initial_task);
 
-    kprintf("task setup\n");
+    kprintf("tasks: intialized\n");
 }

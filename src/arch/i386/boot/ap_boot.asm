@@ -7,14 +7,14 @@ extern ap_main
 extern lapic_get_id
 extern ap_stack_list
 
-ap_stack_size equ 0x4000
-ap_stack_end  equ ap_stack_size + ap_stack
+ap_tmp_stack_size equ 0x1000
+ap_tmp_stack_end  equ ap_tmp_stack_size + ap_tmp_stack
 ap_boot_pmode_nopaging_real equ ap_boot_pmode_nopaging - 0xC0000000
 
 section .bss
 align 32
-ap_stack:
-    resb ap_stack_size
+ap_tmp_stack:
+    resb ap_tmp_stack_size
 
 section .text
 [BITS 16]
@@ -69,7 +69,7 @@ ap_boot_pmode_nopaging:
 
 ap_boot_pmode_paging:
     ; Use temporary stack
-    mov esp, ap_stack_end
+    mov esp, ap_tmp_stack_end
 
     ; Get current cpu id in eax
     call lapic_get_id

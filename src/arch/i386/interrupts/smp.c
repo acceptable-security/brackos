@@ -15,7 +15,7 @@ extern uint32_t cpu_count;
 
 // Used for allocating stacks for each AP
 uintptr_t* ap_stack_list;
-extern uint32_t stack_size;
+uint32_t ap_stack_size = 0x4000;
 
 // Virtual address of AP Trampoline code
 void* trampoline_virt;
@@ -40,20 +40,36 @@ void ap_main() {
 }
 
 // Allocate the AP stacks
-void smp_alloc_stack() {
-    kprintf("smp: allocating stacks of size %d...\n", stack_size);
+bool smp_alloc_stack() {
+    kprintf("smp: allocating stacks of size %d...\n", ap_stack_size);
 
     ap_stack_list = kmalloc(sizeof(void*) * cpu_count);
+
+    if ( ap_stack_list == NULL ) {
+        kprintf("smp: failed to allocate smp stack list\n");
+        return false;
+    }
 
     for ( int i = 0; i < cpu_count; i++ ) {
         if ( i == lapic_get_id() ) {
             ap_stack_list[i] = 0;
         }
         else {
-            ap_stack_list[i] = (uintptr_t) memmap(NULL, stack_size, MMAP_URGENT);
-            kprintf("cpu #%d stack at %p\n", i, ap_stack_list[i]);
+            ap_stack_list[i] = (uintptr_t) memmap(NULL, ap_stack_size, MMAP_URGENT);
+
+            if ( ap_stack_list[i] == 0 ) {
+                kprintf("smp: failed to alloc stack for cpu #%d\n", i);
+                kfree(ap_stack_list);
+                // TODO - free other stacks
+
+                return false;
+            }
+
+            kprintf("smp: cpu #%d stack at %p\n", i, ap_stack_list[i]);
         }
     }
+
+    return true;
 }
 
 bool smp_setup_trampoline() {
@@ -110,7 +126,9 @@ void smp_init() {
         return;
     }
 
-    smp_alloc_stack();
+    if ( !smp_alloc_stack() ) {
+        return;
+    }
 
     kprintf("smp: trampoline setup...\n");
 
@@ -135,5 +153,5 @@ void smp_init() {
     while ( cpu_ready != (cpu_count - 1) ) {}
     kprintf("smp: all cpus are awake\n");
 
-    smp_destroy_trampoline();
+    // smp_destroy_trampoline();
 }
