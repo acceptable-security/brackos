@@ -1,10 +1,10 @@
 ; Spinlock implementation
 
-global spinlock_lock
-global spinlock_unlock
+global _spinlock_lock
+global _spinlock_unlock
 
 ; Lock the spinlock
-spinlock_lock:
+_spinlock_lock:
     push eax
     push ebp
 
@@ -20,7 +20,7 @@ _spinlock_spin:
     ret
 
 ; Unlock the spinlock
-spinlock_unlock:
+_spinlock_unlock:
     push eax
     push ebx
 

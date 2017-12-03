@@ -2,6 +2,8 @@
 #include <mem/kmalloc.h>
 #include <mem/slab.h>
 
+#include <kernel/spinlock.h>
+
 #include <kprint.h>
 #include <stdint.h>
 #include <math.h>
@@ -101,6 +103,8 @@ void* frame_alloc(size_t want_count) {
         return NULL;
     }
 
+    spinlock_lock(buddy_alloc.lock);
+
     // Find the smallest frame count with space
     for ( int count = want_count; count <= MAX_FRAMES; count++ ) {
         if ( buddy_alloc.free_lists[count - 1] != NULL ) {
@@ -117,10 +121,13 @@ void* frame_alloc(size_t want_count) {
                 frame_add_free_item(chunk_end, return_count, false);
             }
 
+            spinlock_unlock(buddy_alloc.lock);
 
             return (void*) address;
         }
     }
+
+    spinlock_unlock(buddy_alloc.lock);
 
     // Didin't find anything :(
     return NULL;
@@ -130,7 +137,9 @@ void* frame_alloc(size_t want_count) {
 //   address - starting address of the allocation
 //   count   - amount of frames to return
 void frame_dealloc(void* address, size_t count) {
+    spinlock_lock(buddy_alloc.lock);
     frame_add_free_item((uintptr_t) address, count, false);
+    spinlock_unlock(buddy_alloc.lock);
 }
 
 // Prints out the current status of the allocator

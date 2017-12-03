@@ -1,7 +1,6 @@
 // Physical Frame Allocator
-// Plan for allocator:
-// Run length encoded linked list of free frames
 
+#include <kernel/spinlock.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -18,6 +17,7 @@ struct frame_node {
 };
 
 typedef struct {
+    spinlock_t lock;
 	uintptr_t base;
 	frame_node_t* free_lists[MAX_FRAMES];
 } frame_alloc_t;
