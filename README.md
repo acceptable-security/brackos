@@ -5,8 +5,8 @@ fun kernel experimentations
 
 ## Building
 
-    make && make clean
+    make clean && make && make image
 
 ## Running
 
-    qemu-system-i386 -kernel kernel.bin -d guest_errors
+    make run
