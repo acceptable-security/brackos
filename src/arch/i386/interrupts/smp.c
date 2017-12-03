@@ -20,11 +20,18 @@ uint32_t ap_stack_size = 0x4000;
 // Virtual address of AP Trampoline code
 void* trampoline_virt;
 
-volatile uint32_t cpu_ready = 0;
+volatile uint32_t cpu_init_bitmap = 0;
+
+// TODO - Not this.
+void smp_wait() {
+    int a = 0;
+    for ( int i = 0; i < 1000000; i++ ) { a++; }
+}
 
 void ap_main() {
-    cpu_ready++;
+    cpu_init_bitmap |= (1 << lapic_get_id());
 
+    // Validate that the stack was loaded correctly
     uintptr_t stack = 0;
     __asm__ volatile ("movl %%ebp, %0" : "=r" (stack) );
 
@@ -34,8 +41,7 @@ void ap_main() {
         while(1){}
     }
 
-    kprintf("smp: hello from cpu %d, booted number %d\n", lapic_get_id(), cpu_ready);
-    kprintf("smp: stack at %p\n", stack);
+    kprintf("smp: hello from cpu %d\n", lapic_get_id());
     while(1) {}
 }
 
@@ -120,38 +126,52 @@ void smp_destroy_trampoline() {
 }
 
 void smp_init() {
+    // Ignore uniprocessor setups
+    if ( cpu_count == 1 ) {
+        kprintf("smp: only 1 cpu found\n");
+        return;
+    }
+
     kprintf("smp: enabling...\n");
 
+    // Allocate/copy AP boot trampoline to 0x7000
     if ( !smp_setup_trampoline() ) {
         return;
     }
 
+    // Allocate 16KB stacks for each AP
     if ( !smp_alloc_stack() ) {
         return;
     }
 
     kprintf("smp: trampoline setup...\n");
 
-    for ( int i = 0; i < cpu_count; i++ ) {
-        if ( i != lapic_get_id() ) {
-            kprintf("smp: sending init to cpu %d\n", i);
-            lapic_send_init(i);
-        }
-    }
-
-    int a = 0;
-    for ( int i = 0; i < 1000000; i++ ) { a++; }
+    // BSP is already booted.
+    cpu_init_bitmap |= (1 << lapic_get_id());
 
     for ( int i = 0; i < cpu_count; i++ ) {
-        if ( i != lapic_get_id() ) {
-            kprintf("smp: sending startup to cpu %d\n", i);
-            lapic_send_startup(i, 7);
+        // Ignore BSP
+        if ( i == lapic_get_id() ) {
+            continue;
         }
+
+        // Send INIT IPI
+        kprintf("smp: sending init to cpu %d\n", i);
+        lapic_send_init(i);
+
+        smp_wait();
+
+        // Send STARTUP IPI
+        kprintf("smp: sending startup to cpu %d\n", i);
+        lapic_send_startup(i, 7);
+
+        /// Wait for boot flag to be set
+        kprintf("smp: waiting on cpu %d\n", i);
+        while ( !(cpu_init_bitmap & (1 << i)) );
+
+        // TODO - Set timeout for faulty processors to be ignored
     }
 
-    kprintf("smp: waiting on %d cpus\n", cpu_count - 1);
-    while ( cpu_ready != (cpu_count - 1) ) {}
     kprintf("smp: all cpus are awake\n");
-
     // smp_destroy_trampoline();
 }

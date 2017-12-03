@@ -4,10 +4,10 @@
 #include <kernel/clock.h>
 #include <kprint.h>
 #include <stdint.h>
-uint32_t sleep_counter; // TODO - no concurrency support!! Replace soon...?
-                        // Since the PIT is only active during the PIC's usage
-                        // which is only used during uniprocessor modes, is there
-                        // ever a scenerio where that could be in conflict?
+volatile uint32_t sleep_counter; // TODO - no concurrency support!! Replace soon...?
+                                 // Since the PIT is only active during the PIC's usage
+                                 // which is only used during uniprocessor modes, is there
+                                 // ever a scenerio where that could be in conflict?
 uint32_t ms_per_tick;
 
 // Called every IRQ 0
@@ -63,7 +63,7 @@ void pit_data_send(uint8_t channel, uint8_t data) {
 
 void pit_sleep(uint32_t ms) {
     if ( sleep_counter != 0 ) {
-        kprintf("Uh oh... PIT received a request for sleep while it wasn't done.");
+        kprintf("pit: received a request for sleep while it wasn't done.");
         return;
     }
 
@@ -71,9 +71,7 @@ void pit_sleep(uint32_t ms) {
 
     kprintf("Waiting for %d ticks...\n", sleep_counter);
 
-    while ( sleep_counter > 0 ) {
-        kprintf("");
-    }
+    while ( sleep_counter > 0 ) {}
 }
 
 // Start a basic square wave interrupt.
