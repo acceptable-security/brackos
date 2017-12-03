@@ -12,6 +12,21 @@ unsigned long strlen(const char* str) {
     return i;
 }
 
+unsigned long strnlen(const char* str, unsigned long n) {
+    unsigned long i = 0;
+
+    while ( *str ) {
+        i++;
+        str++;
+
+        if ( i >= n ) {
+            return n;
+        }
+    }
+
+    return i;
+}
+
 bool strcmp(const char* a, const char* b) {
     int len = strlen(a);
 

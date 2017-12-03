@@ -1,6 +1,7 @@
 #include <stdbool.h>
 
 unsigned long strlen(const char* str);
+unsigned long strnlen(const char* str, unsigned long n);
 bool strcmp(const char* a, const char* b);
 
 void* memcpy(void* dest, const void* src, unsigned long count);

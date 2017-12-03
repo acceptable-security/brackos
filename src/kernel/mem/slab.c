@@ -1,3 +1,4 @@
+#include <kernel/spinlock.h>
 #include <mem/mmap.h>
 #include <mem/slab.h>
 #include <stdlib.h>
@@ -39,10 +40,12 @@ mem_kmalloc_block_t kmalloc_sizes[] = {
 };
 
 // Create a new cache
-mem_cache_t* mem_cache_new(const char* name, unsigned int object_size, unsigned int min,
-                                                                       mem_callback_t* construct,
-                                                                       mem_callback_t* destruct) {
-    if ( strlen(name) >= CACHE_NAME_MAXLEN ) {
+mem_cache_t* mem_cache_new(const char* name,
+                           unsigned int object_size,
+                           unsigned int min,
+                           mem_callback_t* construct,
+                           mem_callback_t* destruct) {
+    if ( strnlen(name, CACHE_NAME_MAXLEN) >= CACHE_NAME_MAXLEN ) {
         kprintf("slab: mem cache name to big!\n");
         return NULL;
     }

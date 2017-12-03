@@ -17,6 +17,10 @@ void* kmalloc(unsigned long count) {
     else if ( count <= 4096 ) {
         return _kmalloc(count);
     }
+    else {
+        // TODO - large allocations
+        return NULL;
+    }
 }
 
 // Kernel calloc
