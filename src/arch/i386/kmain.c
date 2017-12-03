@@ -47,7 +47,8 @@ void load_io() {
 }
 
 // Load memory
-void load_memory(multiboot_info_t* multiboot, unsigned long kernel_heap_start, unsigned long kernel_heap_size) {
+void load_memory(multiboot_info_t* multiboot, unsigned long kernel_heap_start,
+                                              unsigned long kernel_heap_size) {
     // Enable early stage kmalloc/memmap
     early_kmalloc_init((void*) kernel_heap_start, kernel_heap_size);
     memmap_to_frames(multiboot);
@@ -56,7 +57,7 @@ void load_memory(multiboot_info_t* multiboot, unsigned long kernel_heap_start, u
     // Initiate late stage memory
     frame_init();       // Setup the frame allocator
     kmalloc_init();     // Setup late stage kmalloc
-    vasa_switch();      // Switch the virtual address space allocator into late stage mode
+    vasa_switch();      // Switch the vasa into late stage mode
     kmem_swap();        // Switch to late stage memory
 }
 
@@ -90,7 +91,11 @@ void load_interrupts(bool apic_overide) {
     pit_init();         // Setup the Programmable Interrupt Timer
 }
 
-void kernel_main(unsigned long multiboot_magic, multiboot_info_t* multiboot, unsigned long initial_pd, unsigned long kernel_heap_start, unsigned long kernel_heap_size) {
+void kernel_main(uint32_t multiboot_magic,
+                 multiboot_info_t* multiboot,
+                 uintptr_t initial_pd,
+                 uintptr_t kernel_heap_start,
+                 uint32_t kernel_heap_size) {
     if ( multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
         // TODO - have an actual panic
         for ( ;; ) {}
