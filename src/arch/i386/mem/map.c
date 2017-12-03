@@ -10,19 +10,25 @@
 #include <kprint.h>
 #include <math.h>
 
-#define MEM_TYPE(x) ((x) == MULTIBOOT_MEMORY_AVAILABLE ? "AVAILABLE" : "RESERVED" )
+#define MEM_TYPE(x) \
+            ((x) == MULTIBOOT_MEMORY_AVAILABLE ? "AVAILABLE" : "RESERVED")
+
 extern unsigned long kernel_base;
 
 void print_mem_map(void* _multiboot) {
     multiboot_info_t* multiboot = _multiboot;
+
     uintptr_t base = multiboot->mmap_addr + kernel_base;
     uintptr_t end = base + multiboot->mmap_length;
+
+    multiboot_memory_map_t* entry = (multiboot_memory_map_t*) base;
 
     kprintf("== GRUB Memory Map ==\n");
     kprintf("range: [%x, %x]\n", base, end);
     kprintf("Start  End   Type\n");
-    for ( ; base < end; base += ((multiboot_memory_map_t*) base)->size + sizeof(int) ) {
-        multiboot_memory_map_t* entry = (multiboot_memory_map_t*) base;
+
+    for ( ; base < end; base += entry->size + sizeof(int) ) {
+        entry = (multiboot_memory_map_t*) base;
 
         kprintf("%x | %x | %s (%m)\n", entry->addr_low,
                                        entry->addr_low + entry->len_low - 1,
@@ -37,17 +43,21 @@ void memmap_to_frames(void* _multiboot) {
     uintptr_t base = multiboot->mmap_addr + kernel_base;
     uintptr_t end = base + multiboot->mmap_length;
 
-    for ( ; base < end; base += ((multiboot_memory_map_t*) base)->size + sizeof(int) ) {
-        multiboot_memory_map_t* entry = (multiboot_memory_map_t*) base;
+    multiboot_memory_map_t* entry = (multiboot_memory_map_t*) base;
+
+    for ( ; base < end; base += entry->size + sizeof(int) ) {
+        entry = (multiboot_memory_map_t*) base;
+
+        uintptr_t addr = entry->addr_low;
+        uint32_t len = entry->len_low;
 
         // Don't use lower memory.
-        if ( entry->type == MULTIBOOT_MEMORY_AVAILABLE && entry->addr_low != 0 ) {
-            kprintf("found memory chunk @ %x (%m)\n", entry->addr_low, entry->len_low);
-            frame_add_chunk(entry->addr_low, entry->len_low);
+        if ( entry->type == MULTIBOOT_MEMORY_AVAILABLE && addr != 0 ) {
+            kprintf("found memory chunk @ 0x%x (%m)\n", addr, len);
+            frame_add_chunk(addr, len);
             break;
         }
     }
-
 }
 
 // Mark a certain section of memory as used.
@@ -99,16 +109,21 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
             }
 
             for ( int i = 0; i < page_cnt; i++ ) {
-                if ( !paging_map((uintptr_t) pages + (i * PAGE_SIZE), virt_start + (i * PAGE_SIZE), page_flags) ) {
+                uintptr_t page = (uintptr_t) pages + (i * PAGE_SIZE);
+                uintptr_t virt =  virt_start + (i * PAGE_SIZE);
+
+                if ( !paging_map(page, virt, page_flags) ) {
                     frame_dealloc(pages, page_cnt);
-                    kprintf("Failed to map %p to %p\n", (uintptr_t) pages + (i * PAGE_SIZE), virt_start + (i * PAGE_SIZE));
+                    kprintf("Failed to map %p to %p\n", page, virt);
+
                     // TODO - clean up the page dir/table.
                     return NULL;
                 }
             }
         }
         else {
-            // Immediately allocate page_cnt pages (by allocating 1 at a time, it won't necessarily be continuous)
+            // Immediately allocate page_cnt pages (by allocating 1 at a time,
+            // it won't necessarily be continuous)
             for ( int i = 0; i < page_cnt; i++ ) {
                 void* page = frame_alloc(1);
 
@@ -119,10 +134,13 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
                     return NULL;
                 }
 
-                if ( !paging_map((uintptr_t) page, virt_start + (i * PAGE_SIZE), page_flags) ) {
-                    kprintf("failed to map %p to %p\n", page, (void*) virt_start + (page_cnt * PAGE_SIZE));
+                uintptr_t virt = virt_start + (i * PAGE_SIZE);
+
+                if ( !paging_map((uintptr_t) page, virt, page_flags) ) {
+                    kprintf("failed to map %p to %p\n", page, virt);
                     frame_dealloc(page, 1);
                     // TODO - dealloc frames before and fix page dir/table
+
                     return NULL;
                 }
 
