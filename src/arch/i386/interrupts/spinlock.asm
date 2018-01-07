@@ -5,30 +5,42 @@ global _spinlock_unlock
 
 ; Lock the spinlock
 _spinlock_lock:
-    push eax
     push ebp
+    mov ebp, esp
+
+    push eax
+    push ebx
+
+    mov ebx, [ebp + 8]
 
 _spinlock_spin:
     mov eax, 1
-    mov ebx, [ebp + 8]
 
-    xchg eax, [ebx]
+    lock xchg eax, [ebx]
+    test eax, eax
     jnz _spinlock_spin
 
-    pop ebp
+    pop ebx
     pop eax
+
+    pop ebp
     ret
 
 ; Unlock the spinlock
 _spinlock_unlock:
+    push ebp
+    mov ebp, esp
+
     push eax
     push ebx
 
-    mov eax, 0
     mov ebx, [ebp + 8]
+    mov eax, 0
 
-    xchg eax, [ebx]
+    lock xchg eax, [ebx]
 
     pop ebx
     pop eax
+
+    pop ebp
     ret

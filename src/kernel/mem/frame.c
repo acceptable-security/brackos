@@ -193,6 +193,8 @@ void frame_add_chunk(uintptr_t address, size_t size) {
 
 // Initialize a buddy allocator
 void frame_init() {
+    buddy_alloc.lock = 0;
+
     // Initiate the PFA node cache
     if ( mem_cache_new("cache_pfa_node", sizeof(frame_node_t), MAX_FRAMES + 1, NULL, NULL) != NULL ) {
         cache_init = true;
