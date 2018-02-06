@@ -25,3 +25,7 @@
 #if defined(BRACKOS_CONF_SLAB) && defined(BRACKOS_CONF_SLUB)
 #error "You can only define one memory allocator at at time"
 #endif
+
+#if defined(BRACKOS_CONF_SMP) && !defined(BRACKOS_CONF_ACPI)
+#error "If you want to enable SMP you must enable ACPI"
+#endif
