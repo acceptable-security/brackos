@@ -1,3 +1,5 @@
+#include <kernel/config.h>
+
 #include <arch/i386/apic.h>
 #include <arch/i386/paging.h>
 #include <stdbool.h>
@@ -6,6 +8,8 @@
 #include <mem/mmap.h>
 #include <mem/vasa.h>
 #include <kprint.h>
+
+#if defined(BRACKOS_CONF_ACPI) && defined(BRACKOS_CONF_SMP)
 
 // Location of the ap trampoline code
 extern uintptr_t ap_boot_init;
@@ -175,3 +179,5 @@ void smp_init() {
     kprintf("smp: all cpus are awake\n");
     // smp_destroy_trampoline();
 }
+
+#endif

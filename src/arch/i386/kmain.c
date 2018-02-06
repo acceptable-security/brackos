@@ -1,7 +1,12 @@
+#include <kernel/config.h>
+
 #include <arch/i386/gdt.h>
 #include <arch/i386/map.h>
 #include <arch/i386/paging.h>
+
+#ifdef BRACKOS_CONF_ACPI
 #include <arch/i386/acpi.h>
+#endif
 
 #include <arch/i386/apic.h>
 #include <arch/i386/pic.h>
@@ -66,10 +71,11 @@ void load_interrupts(bool apic_overide) {
     idt_init();         // Intialize the Interrupt Descriptor Table
     idt_load();         // Load the intiailized IDT
 
-    bool acpi = acpi_init();
-
     kprintf("enabling the pic\n");
     pic_enable(0x20, 0x28);
+
+#ifdef BRACKOS_CONF_ACPI
+    bool acpi = acpi_init();
 
     if ( acpi && apic_supported() && !apic_overide ) {
         kprintf("enabling the apic\n");
@@ -83,8 +89,11 @@ void load_interrupts(bool apic_overide) {
 
         kprintf("apic enabled: %d\n", lapic_is_enabled());
 
+#ifdef BRACKOS_CONF_SMP
         smp_init();
+#endif
     }
+#endif
 
     irq_init();         // Setup Interrupt Requests
     exception_init();   // Setup CPU exceptions

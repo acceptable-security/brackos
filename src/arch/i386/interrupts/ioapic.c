@@ -1,9 +1,13 @@
+#include <kernel/config.h>
+
 #include <arch/i386/paging.h>
 #include <mem/vasa.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <kprint.h>
+
+#ifdef BRACKOS_CONF_ACPI
 
 // Memory offsets
 #define IOAPIC_IOREGSEL 0x00
@@ -142,3 +146,5 @@ void ioapic_setup(uintptr_t base) {
 
     kprintf("ioapic: all entries disabled.\n");
 }
+
+#endif

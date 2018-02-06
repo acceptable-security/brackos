@@ -1,3 +1,5 @@
+#include <kernel/config.h>
+
 #include <arch/i386/acpi.h>
 #include <arch/i386/apic.h>
 #include <arch/i386/paging.h>
@@ -5,6 +7,8 @@
 #include <mem/vasa.h>
 #include <stdlib.h>
 #include <kprint.h>
+
+#ifdef BRACKOS_CONF_ACPI
 
 #define ACPI_SIGNATURE_RSDP1 0x20445352
 #define ACPI_SIGNATURE_RSDP2 0x20525450
@@ -360,3 +364,5 @@ bool acpi_init() {
 
     return true;
 }
+
+#endif
