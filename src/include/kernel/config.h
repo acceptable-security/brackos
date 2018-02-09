@@ -8,10 +8,10 @@
 #define BRACKOS_CONF_SMP
 
 // Enable support for the SLAB allocator
-#define BRACKOS_CONF_SLAB
+// #define BRACKOS_CONF_SLAB
 
 // Enable support for the SLUB allocator
-// #define BRACKOS_CONF_SLUB
+#define BRACKOS_CONF_SLUB
 
 
 // There are verifications of the configuration and shouldn't be modified unless

@@ -26,6 +26,7 @@
 
 #include <mem/frame.h>
 #include <mem/slab.h>
+#include <mem/slub.h>
 #include <mem/early.h>
 #include <mem/mmap.h>
 #include <mem/vasa.h>

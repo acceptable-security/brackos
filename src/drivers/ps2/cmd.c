@@ -57,7 +57,7 @@ bool ps2_reset_devices() {
     ps2_flush_buffer();
 
     uint8_t response, selftest;
-    bool success;
+    bool success = true;
 
     if ( ps2_first_device ) {
         // Write reset command and test for command success

@@ -16,7 +16,7 @@
 #define IA32_APIC_BASE_MSR_ENABLE 0x800
 
 bool cpu_has_msr() {
-    uint32_t _unused, eax, edx;
+    uint32_t _unused = 0, eax = 0, edx = 0;
     __get_cpuid(1, &eax, &edx, &_unused, &_unused);
     return edx & bit_MSR;
 }

@@ -1,6 +1,7 @@
 #include <mem/early.h>
 #include <mem/kmalloc.h>
 #include <mem/slab.h>
+#include <mem/slub.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>

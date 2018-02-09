@@ -1,6 +1,7 @@
 // Virtual Address Space Allocator.
 #include <mem/early.h>
 #include <mem/slab.h>
+#include <mem/slub.h>
 #include <mem/vasa.h>
 #include <stdlib.h>
 #include <stdint.h>

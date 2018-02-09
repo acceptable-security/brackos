@@ -1,6 +1,6 @@
-#include <kernel/config.h>
+; #include <kernel/config.h>
 
-#if defined(BRACKOS_CONF_ACPI) && defined(BRACKOS_CONF_SMP)
+; #if defined(BRACKOS_CONF_ACPI) && defined(BRACKOS_CONF_SMP)
 
 global ap_boot_init
 global ap_boot_end
@@ -91,4 +91,4 @@ ap_boot_pmode_paging:
 ap_boot_end:
 ap_boot_size equ $ - ap_boot_init - 1
 
-#endif
+; #endif

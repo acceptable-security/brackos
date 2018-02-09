@@ -6,14 +6,14 @@ CC = i386-elf-gcc
 LD = i386-elf-gcc
 
 #FLAGS
-DEFAULT_CFLAGS = -Wall -O -fomit-frame-pointer -ffreestanding  -finline-functions -c -g -std=c11
+DEFAULT_CFLAGS = -Wall -Werror -O -fomit-frame-pointer -ffreestanding  -finline-functions -c -g -std=c11
 ASMFLAGS = -f elf32 -g
 CFLAGS = $(DEFAULT_CFLAGS) -m32 -Isrc/include/
 LDFLAGS = -m32 -ffreestanding -O2 -nostdlib -g
 
 # The necessary source files
 C_SOURCES = $(shell find src -name '*.c')
-ASM_SOURCES = $(shell find src -name '*.asm')
+ASM_SOURCES = $(shell find src -iname '*.asm')
 
 # Their complementary object files
 C_OBJECTS = $(subst src, build, $(C_SOURCES:.c=.o))

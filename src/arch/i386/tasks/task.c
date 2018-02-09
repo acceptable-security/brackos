@@ -93,7 +93,10 @@ task_t* task_kernel_create(char* name, uintptr_t address) {
     task->user_regs->eip = address;
     task->user_regs->ebp = task->stack_top;
     task->user_regs->esp = task->stack_top;
-    task->user_regs->ds = task->user_regs->fs = task->user_regs->es = task->user_regs->fs = 0x10;
+    task->user_regs->ds = 0x10;
+    task->user_regs->fs = 0x10;
+    task->user_regs->es = 0x10;
+    task->user_regs->fs = 0x10;
 
     return task;
 }

@@ -1,6 +1,7 @@
 #include <mem/frame.h>
 #include <mem/kmalloc.h>
 #include <mem/slab.h>
+#include <mem/slub.h>
 
 #include <kernel/spinlock.h>
 
