@@ -1,5 +1,9 @@
+#include <kernel/config.h>
+
 #include <stdint.h>
 #include <stdbool.h>
+
+#ifdef BRACKOS_CONF_SLAB
 
 #define CACHE_NAME_MAXLEN 32
 #define SLAB_SIZE 0x2000 // slab size == page size for now.
@@ -51,3 +55,6 @@ void mem_cache_dealloc(const char* name, void* object);
 void kmalloc_init();
 void* _kmalloc(unsigned int size);
 bool _kfree(void* ptr);
+
+
+#endif

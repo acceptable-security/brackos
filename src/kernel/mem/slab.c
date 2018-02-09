@@ -1,9 +1,13 @@
+#include <kernel/config.h>
+
 #include <kernel/spinlock.h>
 #include <mem/mmap.h>
 #include <mem/slab.h>
 #include <stdlib.h>
 #include <string.h>
 #include <kprint.h>
+
+#ifdef BRACKOS_CONF_SLAB
 
 #define SLAB_NEXT(SLAB) (mem_slab_t*)(((uintptr_t) (SLAB)->next_slab) & ~4095)
 #define SLAB_COUNT(SLAB) (((uintptr_t) (SLAB)->next_slab) & 4095)
@@ -422,3 +426,5 @@ bool _kfree(void* ptr) {
     mem_cache_dealloc(block.name, ptr);
     return true;
 }
+
+#endif

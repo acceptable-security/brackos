@@ -1,3 +1,6 @@
+#ifndef _BRACKOS_CONF
+#define _BRACKOS_CONF
+
 // Enable support for ACPI
 #define BRACKOS_CONF_ACPI
 
@@ -28,4 +31,6 @@
 
 #if defined(BRACKOS_CONF_SMP) && !defined(BRACKOS_CONF_ACPI)
 #error "If you want to enable SMP you must enable ACPI"
+#endif
+
 #endif
