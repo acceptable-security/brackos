@@ -12,9 +12,9 @@
 
 #ifdef BRACKOS_CONF_SLUB
 
-#define SLAB_NEXT(SLAB) (mem_slab_t *)(((uintptr_t)(SLAB)->next_slab) & ~4095)
+#define SLAB_NEXT(SLAB) (mem_slab_t *) (((uintptr_t) (SLAB)->next_slab) & ~4095)
 #define SLAB_COUNT(SLAB) (((uintptr_t)(SLAB)->next_slab) & 4095)
-#define SLAB_CREATE_NEXT(NEXT, SLAB) (mem_slab_t *)((uintptr_t)SLAB | (uintptr_t)NEXT)
+#define SLAB_CREATE_NEXT(NEXT, SLAB) (mem_slab_t*) ((uintptr_t) SLAB | (uintptr_t) NEXT)
 
 // Create the cache_cache in the data section.
 mem_cache_t cache_cache = {
@@ -45,11 +45,11 @@ mem_kmalloc_block_t kmalloc_sizes[] = {
 };
 
 // Create a new cache
-mem_cache_t *mem_cache_new(const char *name,
+mem_cache_t* mem_cache_new(const char* name,
                            unsigned int object_size,
                            unsigned int min,
-                           mem_callback_t *construct,
-                           mem_callback_t *destruct) {
+                           mem_callback_t* construct,
+                           mem_callback_t* destruct) {
     if ( strnlen(name, CACHE_NAME_MAXLEN) >= CACHE_NAME_MAXLEN ) {
         kprintf("slub: mem cache name to big!\n");
         return NULL;
@@ -61,7 +61,7 @@ mem_cache_t *mem_cache_new(const char *name,
     }
 
     // Allocate the cache from the cache_cache cache :^)
-    mem_cache_t *cache = mem_cache_alloc("cache_cache");
+    mem_cache_t* cache = mem_cache_alloc("cache_cache");
 
     if ( cache == NULL ) {
         kprintf("slub: failed to allocate new cache!\n");
@@ -95,8 +95,8 @@ mem_cache_t *mem_cache_new(const char *name,
 }
 
 // Add a cache to the cache list
-void mem_cache_add(mem_cache_t *cache) {
-    mem_cache_t *head = &cache_cache;
+void mem_cache_add(mem_cache_t* cache) {
+    mem_cache_t* head = &cache_cache;
 
     // Find the end of the list in head.
     while ( head->next_cache != NULL ) {
@@ -108,9 +108,9 @@ void mem_cache_add(mem_cache_t *cache) {
 }
 
 // Allocate a new slab for a specific cache
-mem_slab_t *mem_slab_new(mem_cache_t *cache) {
+mem_slab_t* mem_slab_new(mem_cache_t* cache) {
     // Allocate a new slab
-    mem_slab_t *slab = (mem_slab_t *) memmap(NULL, SLAB_SIZE, MMAP_URGENT);
+    mem_slab_t* slab = (mem_slab_t*) memmap(NULL, SLAB_SIZE, MMAP_URGENT);
 
     if ( slab == NULL ) {
         return NULL;
@@ -118,7 +118,7 @@ mem_slab_t *mem_slab_new(mem_cache_t *cache) {
 
     // Derive the object count and the end of the slab header
     unsigned int object_count = (SLAB_SIZE - sizeof(mem_slab_t) - 1) / cache->object_size;
-    uintptr_t *end = (uintptr_t *)(slab + 1);
+    uintptr_t* end = (uintptr_t*) (slab + 1);
 
     // Initialize the freelist
     slab->free_head = end;
@@ -132,7 +132,7 @@ mem_slab_t *mem_slab_new(mem_cache_t *cache) {
         *end = next;
 
         // Handle that object next.
-        end = (uintptr_t *) next;
+        end = (uintptr_t*) next;
     }
 
     // Last object should be initialized to NULL
@@ -142,26 +142,26 @@ mem_slab_t *mem_slab_new(mem_cache_t *cache) {
 }
 
 // Count the amount of free objects in a slab
-uint32_t mem_slab_free_count(mem_slab_t *slab) {
+uint32_t mem_slab_free_count(mem_slab_t* slab) {
     // Start at the head
     uint32_t count = 0;
-    uintptr_t *object = slab->free_head;
+    uintptr_t* object = slab->free_head;
 
     // Count the free objects
     while ( object != NULL ) {
         count++;
-        object = *(uintptr_t **) object;
+        object = *(uintptr_t**) object;
     }
 
     return count;
 }
 
 // Count the amount of free objects in a cache
-uint32_t mem_cache_free_count(mem_cache_t *cache) {
+uint32_t mem_cache_free_count(mem_cache_t* cache) {
     uint32_t count = 0;
 
     // Count the semi list
-    mem_slab_t *head = cache->cpu_caches[GET_CPU()].semi;
+    mem_slab_t* head = cache->cpu_caches[GET_CPU()].semi;
 
     while ( head != NULL ) {
         count += mem_slab_free_count(head);
@@ -180,8 +180,8 @@ uint32_t mem_cache_free_count(mem_cache_t *cache) {
 }
 
 // Allocate an object from a cache
-void *mem_cache_alloc(const char *name) {
-    mem_cache_t *cache = &cache_cache;
+void* mem_cache_alloc(const char* name) {
+    mem_cache_t* cache = &cache_cache;
 
     // Find the cache
     while ( cache != NULL ) {
@@ -199,7 +199,7 @@ void *mem_cache_alloc(const char *name) {
 
     if ( cache->cpu_caches[GET_CPU()].semi == NULL ) {
         if ( cache->cpu_caches[GET_CPU()].empty == NULL ) {
-            mem_slab_t *slab = mem_slab_new(cache);
+            mem_slab_t* slab = mem_slab_new(cache);
 
             if ( slab == NULL ) {
                 return NULL;
@@ -210,7 +210,7 @@ void *mem_cache_alloc(const char *name) {
         }
         else {
             // Remove the cache from the empty
-            mem_slab_t *slab = cache->cpu_caches[GET_CPU()].empty;
+            mem_slab_t* slab = cache->cpu_caches[GET_CPU()].empty;
             cache->cpu_caches[GET_CPU()].empty = SLAB_NEXT(slab);
 
             // Add it the semi list
@@ -219,11 +219,11 @@ void *mem_cache_alloc(const char *name) {
         }
     }
 
-    mem_slab_t *slab = cache->cpu_caches[GET_CPU()].semi;
+    mem_slab_t* slab = cache->cpu_caches[GET_CPU()].semi;
 
     // Get the next free object, and make the freelist head the next object.
-    uintptr_t *object = slab->free_head;
-    slab->free_head = *(uintptr_t **)object;
+    uintptr_t* object = slab->free_head;
+    slab->free_head = *(uintptr_t**) object;
 
     // When we're out of free objects, move the slab to the used list.
     if ( slab->free_head == NULL ) {
@@ -234,7 +234,7 @@ void *mem_cache_alloc(const char *name) {
     }
 
     if ( cache->construct ) {
-        cache->construct((void *)object);
+        cache->construct((void*) object);
     }
 
     // If there is a minimum to worry about, make sure we don't hit it.
@@ -244,7 +244,7 @@ void *mem_cache_alloc(const char *name) {
         if ( free_count < cache->min ) {
 
             // If we did, allocate into the empty list. If it fails, don't worry.
-            mem_slab_t *slab = mem_slab_new(cache);
+            mem_slab_t* slab = mem_slab_new(cache);
 
             if ( slab != NULL ) {
                 slab->next_slab = SLAB_CREATE_NEXT(cache->cpu_caches[GET_CPU()].empty, SLAB_COUNT(slab));
@@ -257,8 +257,8 @@ void *mem_cache_alloc(const char *name) {
 }
 
 // Deallocate an object from a cache
-void mem_cache_dealloc(const char *name, void *object) {
-    mem_cache_t *cache = &cache_cache;
+void mem_cache_dealloc(const char* name, void* object) {
+    mem_cache_t* cache = &cache_cache;
 
     // Find the cache
     while ( cache != NULL ) {
@@ -274,14 +274,14 @@ void mem_cache_dealloc(const char *name, void *object) {
     }
 
     // Locate the slab from the object
-    mem_slab_t *slab = (mem_slab_t *) ((uintptr_t) object & ~4095);
+    mem_slab_t* slab = (mem_slab_t*) ((uintptr_t) object & ~4095);
 
     // Object counts from the next_slab bottom 12 bits.
     unsigned int free_count = 1; // Start at one for the object we're adding
     unsigned int total_count = SLAB_COUNT(slab);
 
-    uintptr_t *free_prev = NULL;
-    uintptr_t *free_obj = slab->free_head;
+    uintptr_t* free_prev = NULL;
+    uintptr_t* free_obj = slab->free_head;
 
     // We go through the whole list - even once we insert the object - to get free count
     while ( free_obj != NULL ) {
@@ -303,12 +303,12 @@ void mem_cache_dealloc(const char *name, void *object) {
         // Increment the count, and move forward in the list
         free_count++;
         free_prev = free_obj;
-        free_obj = (uintptr_t *)*free_obj;
+        free_obj = (uintptr_t*) *free_obj;
     }
 
     // If we run off the end of the list we won't add, so add it at the end.
     if ( object ) {
-        *free_prev = (uintptr_t)object;
+        *free_prev = (uintptr_t) object;
     }
 
     // Move this party to the empty list
@@ -329,7 +329,7 @@ void kmalloc_init() {
 
 mem_kmalloc_block_t _kmalloc_get_block(void *object) {
     // Locate the slab from the object
-    mem_slab_t *slab = (mem_slab_t *) ((uintptr_t) object & ~0xFFF);
+    mem_slab_t* slab = (mem_slab_t*) ((uintptr_t) object & ~0xFFF);
 
     // Get the total amount of objects in the slab
     unsigned int object_count = SLAB_COUNT(slab);
@@ -393,7 +393,7 @@ void *_kmalloc(unsigned int size) {
 }
 
 // krealloc for small pointers
-void *_krealloc(void *ptr, unsigned long size) {
+void* _krealloc(void* ptr, unsigned long size) {
     // Get the current block size of the pointer
     mem_kmalloc_block_t current_block = _kmalloc_get_block(ptr);
 
@@ -426,7 +426,7 @@ void *_krealloc(void *ptr, unsigned long size) {
 }
 
 // kfree for small pointers
-bool _kfree(void *ptr) {
+bool _kfree(void* ptr) {
     mem_kmalloc_block_t block = _kmalloc_get_block(ptr);
 
     if ( block.size == 0 ) {
