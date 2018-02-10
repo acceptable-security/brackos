@@ -283,7 +283,7 @@ void mem_cache_dealloc(const char *name, void *object) {
     uintptr_t *free_prev = NULL;
     uintptr_t *free_obj = slab->free_head;
 
-    // We go through the whole list - even once we insert the object - to get
+    // We go through the whole list - even once we insert the object - to get free count
     while ( free_obj != NULL ) {
         // Have we not inserted the object yet and found a location suitable for object (we want to keep order)
         if ( object != NULL && (uintptr_t) object > (uintptr_t) free_obj ) {
