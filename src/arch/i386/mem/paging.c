@@ -1,7 +1,10 @@
 #include <arch/i386/paging.h>
+#include <kernel/spinlock.h>
 #include <kprint.h>
 #include <mem/frame.h>
 #include <stdint.h>
+
+spinlock_t page_lock;
 
 #define PAGE_NO_FLAGS(OBJ) (((uintptr_t) OBJ) & ~0xFFF)
 #define PAGE_GET_FLAGS(OBJ) (((uintptr_t) OBJ) & 0xFFF)
@@ -39,6 +42,8 @@ void paging_print_page(uintptr_t dir) {
 }
 
 void page_directory_copy(page_directory_t* dest, page_directory_t* src) {
+    spinlock_lock(page_lock);
+
     for ( int dir_ent = 0; dir_ent < 1023; dir_ent++ ) {
         if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
             page_table_t* dst_table = (page_table_t*) frame_alloc(1);
@@ -54,6 +59,8 @@ void page_directory_copy(page_directory_t* dest, page_directory_t* src) {
             dest->tables[dir_ent] = PAGE_TABLE_FLAGS(NULL, PAGE_GET_FLAGS(src->tables[dir_ent]));
         }
     }
+
+    spinlock_unlock(page_lock);
 }
 
 void paging_print() {
@@ -109,6 +116,8 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
 
     page_table_t* table = page_table_base + dir_ent;
 
+    spinlock_lock(page_lock);
+
     if ( !PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
         // Allocate a new table and insert it to the proper location with the proper flags.
         page_table_t* new_table = (page_table_t*) frame_alloc(1);
@@ -120,6 +129,7 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
         // remapping an already mapped page
         // TODO - panic?
         kprintf("paging: this page is already mapped in a PSE page\n");
+        spinlock_unlock(page_lock);
         return false;
     }
 
@@ -127,16 +137,20 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags) {
         kprintf("%p v. %p\n", *(uintptr_t*)&table->entries[tab_ent], physical);
         if ( table->entries[tab_ent].address == physical && table->entries[tab_ent].flags == flags ) {
             // Already mapped at the same address
+            spinlock_unlock(page_lock);
             return true;
         }
 
         // Don't remap the same page
         kprintf("paging: this page is already mapped\n");
+        spinlock_unlock(page_lock);
         return false;
     }
 
     uintptr_t ent = (physical & ~0xFFF) | flags;
     table->entries[tab_ent] = *(page_entry_t*)&ent;
+
+    spinlock_unlock(page_lock);
 
     return true;
 }
@@ -145,10 +159,14 @@ bool paging_unmap(uintptr_t virt) {
     uintptr_t dir_ent = virt >> 22;
     uintptr_t tab_ent = virt >> 12 & 0x03FF;
 
+    spinlock_lock(page_lock);
+
     if ( !PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
         // attempting to unmap a nonexistant page table
         // TODO - panic?
         kprintf("paging: attempted to unmap from a nonexistant page table.\n");
+
+        spinlock_unlock(page_lock);
         return false;
     }
 
@@ -178,7 +196,7 @@ bool paging_unmap(uintptr_t virt) {
         page_directory_table->tables[dir_ent] = 0;
     }
 
-
+    spinlock_unlock(page_lock);
     return true;
 }
 
