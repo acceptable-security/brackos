@@ -1,3 +1,4 @@
+#include <kernel/spinlock.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -23,6 +24,8 @@ struct vasa_node {
 typedef struct {
     vasa_node_t* free_head; // head of the free list
     vasa_node_t* used_head; // head of the used list
+
+    spinlock_t lock;
 } vasa_t;
 
 bool vasa_mark(uintptr_t base, unsigned long length, bool used, unsigned long flags);

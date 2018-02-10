@@ -1,7 +1,6 @@
 #include <kernel/config.h>
 
 #include <arch/i386/apic.h>
-#include <kernel/spinlock.h>
 #include <mem/mmap.h>
 #include <mem/slub.h>
 #include <stdlib.h>

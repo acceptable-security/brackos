@@ -249,6 +249,8 @@ unsigned long vasa_get_flags(uintptr_t base) {
 
 // Deallocate a virtual address space ptr.
 void vasa_dealloc(void* ptr) {
+    spinlock_lock(global_asa.lock);
+
     vasa_node_t* prev = NULL;
     vasa_node_t* head = global_asa.used_head;
 
@@ -270,6 +272,7 @@ void vasa_dealloc(void* ptr) {
             }
 
             vasa_add_node(head, false);
+            spinlock_unlock(global_asa.lock);
             return;
         }
 
@@ -279,6 +282,7 @@ void vasa_dealloc(void* ptr) {
 
     // Didn't find the pointer in the freelist, ignore it.
     // TODO - PANIC?
+    spinlock_unlock(global_asa.lock);
 }
 
 // Allocate virtual address space for a given memory type
@@ -288,6 +292,8 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
         kprintf("vasa: cannot allocate size 0\n");
         return NULL;
     }
+
+    spinlock_lock(global_asa.lock);
 
     vasa_node_t* prev = NULL;
     vasa_node_t* head = global_asa.free_head;
@@ -321,6 +327,7 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
             node->flags = flags;
 
             vasa_add_node(node, true);
+            spinlock_unlock(global_asa.lock);
             return ptr;
         }
 
@@ -328,6 +335,7 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
         head = head->next;
     }
 
+    spinlock_unlock(global_asa.lock);
     return NULL;
 }
 
