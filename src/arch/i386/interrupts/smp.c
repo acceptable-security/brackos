@@ -47,8 +47,8 @@ void ap_main() {
 
     kprintf("smp: hello from cpu %d\n", lapic_get_id());
 
-    for ( int j = 0; j < 1; j++ ) {
-        int test_size = 3;
+    for ( int j = 0; j < 2; j++ ) {
+        int test_size = 500;
         void** test = (void**) kmalloc(sizeof(void*) * test_size);
 
 
