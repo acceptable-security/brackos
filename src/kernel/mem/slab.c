@@ -284,8 +284,8 @@ void mem_cache_dealloc(const char* name, void* object) {
         // Have we not inserted the object yet and found a location suitable for object (we want to keep order)
         if ( object != NULL && (uintptr_t) object > (uintptr_t) free_obj ) {
             // Insert the object here, or if there is no here at the head.
-            if ( free_prev ) {
-                *free_prev = (uintptr_t) object;
+            if ( free_prev != NULL ) {
+                *free_prev = (uintptr_t) object;   
             }
             else {
                 slab->free_head = (uintptr_t*) object;

@@ -286,17 +286,17 @@ void mem_cache_dealloc(const char* name, void* object) {
     // We go through the whole list - even once we insert the object - to get free count
     while ( free_obj != NULL ) {
         // Have we not inserted the object yet and found a location suitable for object (we want to keep order)
-        if ( object != NULL && (uintptr_t) object > (uintptr_t) free_obj ) {
-            // Insert the object here, or if there is no here at the head.
-            if ( free_prev ) {
-                *free_prev = (uintptr_t)object;
+        if ( object != NULL && ((uintptr_t) object) < ((uintptr_t) free_obj) ) {
+            // Insert the object here, or if there is no here at the head then
+            // set the current object to the object's next, and clear it so it isn't added again.
+            if ( free_prev != NULL ) {
+                *free_prev = (uintptr_t) object;
             }
             else {
-                slab->free_head = (uintptr_t *)object;
+                slab->free_head = (uintptr_t*) object;
             }
 
-            // Set the current object to the object's next, and clear it so it isn't added again.
-            *(uintptr_t *)object = (uintptr_t)free_obj;
+            *(uintptr_t*) object = (uintptr_t) free_obj;
             object = NULL;
         }
 
@@ -308,6 +308,7 @@ void mem_cache_dealloc(const char* name, void* object) {
 
     // If we run off the end of the list we won't add, so add it at the end.
     if ( object ) {
+        kprintf("ran off end, adding %p at %p", object, free_prev);
         *free_prev = (uintptr_t) object;
     }
 
@@ -341,7 +342,7 @@ mem_kmalloc_block_t _kmalloc_get_block(void *object) {
     int estimate = total_object_space / object_count;
 
     // Find the first highest object then go one lower (aka round down)
-    for ( int i = 0; i < sizeof(kmalloc_sizes) / sizeof(mem_kmalloc_block_t); i++) {
+    for ( int i = 0; i < sizeof(kmalloc_sizes) / sizeof(mem_kmalloc_block_t); i++ ) {
         if ( kmalloc_sizes[i].size > estimate ) {
             if ( i == 0 ) {
                 return kmalloc_sizes[i];
