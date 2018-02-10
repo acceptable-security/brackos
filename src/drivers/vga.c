@@ -1,6 +1,9 @@
+#include <kernel/spinlock.h>
 #include <drivers/vga.h>
 #include <stdint.h>
 #include <string.h>
+
+spinlock_t line_lock;
 
 static inline char vga_entry_color(enum vga_color fg, enum vga_color bg) {
     return fg | bg << 4;
@@ -68,11 +71,15 @@ void vga_putchar(char c) {
 }
 
 void vga_write(const char* data, int size) {
+    spinlock_lock(line_lock);
     for ( int i = 0; i < size; i++ ) {
         vga_putchar(data[i]);
     }
+    spinlock_unlock(line_lock);
 }
 
 void vga_writestring(const char* data) {
+    spinlock_lock(line_lock);
     vga_write(data, strlen(data));
+    spinlock_unlock(line_lock);
 }
