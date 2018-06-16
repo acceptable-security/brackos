@@ -12,14 +12,13 @@ extern lapic_get_id
 extern ap_stack_list
 
 ap_tmp_stack_size equ 0x1000
-ap_tmp_stack_end  equ ap_tmp_stack_size + ap_tmp_stack
-ap_boot_pmode_nopaging_real equ ap_boot_pmode_nopaging - 0xC0000000
 
 section .bss
 align 32
 ap_tmp_stack:
     resb ap_tmp_stack_size
 
+ap_tmp_stack_end  equ ap_tmp_stack_size + ap_tmp_stack
 section .text
 [BITS 16]
 ap_boot_init:
@@ -70,6 +69,8 @@ ap_boot_pmode_nopaging:
     ; Long jump into the higher half
     lea ecx, [ap_boot_pmode_paging]
     jmp ecx
+
+ap_boot_pmode_nopaging_real equ ap_boot_pmode_nopaging - 0xC0000000
 
 ap_boot_pmode_paging:
     ; Use temporary stack

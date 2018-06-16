@@ -6,7 +6,6 @@ global initial_pd_real
 
 kernel_vbase    equ 0xC0000000
 kernel_page     equ (kernel_vbase >> 22)
-initial_pd_real equ initial_pd - kernel_vbase
 
 %define PAGE_DIR_PRESENT  1 << 0
 %define PAGE_DIR_RW       1 << 1
@@ -32,3 +31,5 @@ initial_pd:
     %rep (1024 - kernel_page - 1)
         PAGE(0, 0)
     %endrep
+
+initial_pd_real equ initial_pd - kernel_vbase

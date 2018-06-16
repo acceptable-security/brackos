@@ -7,7 +7,7 @@ LD = i386-elf-gcc
 
 #FLAGS
 DEFAULT_CFLAGS = -Wall -Werror -O -fomit-frame-pointer -ffreestanding  -finline-functions -c -g -std=c11
-ASMFLAGS = -f elf32 -g
+ASMFLAGS = -f elf
 CFLAGS = $(DEFAULT_CFLAGS) -m32 -Isrc/include/
 LDFLAGS = -m32 -ffreestanding -O2 -nostdlib -g
 
@@ -41,6 +41,6 @@ image:
 	grub-mkrescue -o brackos.iso isodir
 
 run:
-	qemu-system-x86_64 -hda brackos.iso -d guest_errors -no-reboot -serial stdio -smp 3
+	qemu-system-x86_64 -hda brackos.iso -d guest_errors -no-reboot -serial stdio -smp 2
 
 .PHONY: clean kernel run

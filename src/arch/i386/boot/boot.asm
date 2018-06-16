@@ -1,7 +1,6 @@
 ; set entry point to physical address
 global _loader
 global loader
-loader equ (_loader - 0xC0000000)
 
 ; Juicy variables from paging.asm
 extern initial_pd, initial_pd_real
@@ -34,6 +33,8 @@ _loader:
     ; Long jump into the higher half
     lea ecx, [higherhalf]
     jmp ecx
+
+loader equ (_loader - 0xC0000000)
 
 higherhalf:
     ; I've removed this unmap to test the viability of keeping it.
