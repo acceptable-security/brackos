@@ -47,26 +47,6 @@ void ap_main() {
 
     kprintf("smp: hello from cpu %d\n", lapic_get_id());
 
-    for ( int j = 0; j < 2; j++ ) {
-        int test_size = 500;
-        void** test = (void**) kmalloc(sizeof(void*) * test_size);
-
-
-        for ( int i = 0; i < test_size; i++ ) {
-            kprintf("cpu %d test %d malloc %d\n", lapic_get_id(), j, i);
-            test[i] = kmalloc(1);
-        }
-
-        for ( int i = 0; i < test_size; i++ ) {
-            kprintf("cpu %d test %d free %d\n", lapic_get_id(), j, i);
-            kfree(test[i]);
-        }
-
-        kfree(test);
-    }
-
-    kprintf("cpu %d mem test done\n", lapic_get_id());
-
     while(1) {}
 }
 
