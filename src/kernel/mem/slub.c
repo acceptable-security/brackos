@@ -256,13 +256,49 @@ void* mem_cache_alloc(const char* name) {
     return object;
 }
 
+mem_slab_t* mem_cache_find_slab(mem_cache_t* cache, void* object) {
+    uintptr_t obj_n = (uintptr_t) object;
+
+    // Check the semi list
+    mem_slab_t* head = cache->cpu_caches[GET_CPU()].semi;
+
+    while ( head != NULL ) {
+        uintptr_t start = (uintptr_t) head;
+        uintptr_t end = start + SLAB_SIZE;
+
+        if ( obj_n >= start && obj_n <= end ) {
+            return head;
+        }
+
+        head = SLAB_NEXT(head);
+    }
+
+    // Check the full list
+    head = cache->cpu_caches[GET_CPU()].full;
+
+    while ( head != NULL ) {
+        uintptr_t start = (uintptr_t) head;
+        uintptr_t end = start + SLAB_SIZE;
+
+        kprintf("> bounds %p - %p\n", start, end);
+
+        if ( obj_n >= start && obj_n <= end ) {
+            return head;
+        }
+
+        head = SLAB_NEXT(head);
+    }
+
+    return NULL;
+}
+
 // Deallocate an object from a cache
 void mem_cache_dealloc(const char* name, void* object) {
     mem_cache_t* cache = &cache_cache;
 
     // Find the cache
     while ( cache != NULL ) {
-        if ( strcmp(cache->name, name) == 0 ) {
+        if ( strcmp(cache->name, name) == true ) {
             break;
         }
 
@@ -274,7 +310,19 @@ void mem_cache_dealloc(const char* name, void* object) {
     }
 
     // Locate the slab from the object
-    mem_slab_t* slab = (mem_slab_t*) ((uintptr_t) object & ~4095);
+    
+    mem_slab_t* slab = NULL;
+    
+    switch ( SLAB_SIZE ) {
+        case 0x1000: slab = (mem_slab_t*) ((uintptr_t) object & ~0x1FFF);
+        case 0x2000: slab = (mem_slab_t*) ((uintptr_t) object & ~0xFFF);
+        default:     slab = mem_cache_find_slab(cache, object);
+    }    
+
+    if ( slab == NULL ) {
+        kprintf("failed to find slab for %p\n", object);
+        return;
+    }
 
     // Object counts from the next_slab bottom 12 bits.
     unsigned int free_count = 1; // Start at one for the object we're adding
@@ -330,7 +378,7 @@ void kmalloc_init() {
 
 mem_kmalloc_block_t _kmalloc_get_block(void *object) {
     // Locate the slab from the object
-    mem_slab_t* slab = (mem_slab_t*) ((uintptr_t) object & ~0xFFF);
+    mem_slab_t* slab = (mem_slab_t*) ((uintptr_t) object & ~0x1FFF);
 
     // Get the total amount of objects in the slab
     unsigned int object_count = SLAB_COUNT(slab);
@@ -379,7 +427,7 @@ mem_kmalloc_block_t _kmalloc_block_for_size(unsigned long size) {
 }
 
 // kmalloc for small pointers
-void *_kmalloc(unsigned int size) {
+void* _kmalloc(unsigned int size) {
     if ( size == 0 ) {
         return NULL;
     }
