@@ -68,10 +68,16 @@ bool smp_alloc_stack() {
         else {
             ap_stack_list[i] = (uintptr_t) memmap(NULL, ap_stack_size, MMAP_URGENT);
 
-            if ( ap_stack_list[i] == 0 ) {
+            if ( ap_stack_list[i] == NULL ) {
                 kprintf("smp: failed to alloc stack for cpu #%d\n", i);
+
+                for ( int j = 0; j < i; j++ ) {
+                    if ( ap_stack_list[j] != NULL ) {
+                        mmunmap(ap_stack_list[i]);
+                    }
+                }
+
                 kfree(ap_stack_list);
-                // TODO - free other stacks
 
                 return false;
             }
