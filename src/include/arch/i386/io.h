@@ -8,8 +8,8 @@ static inline void outportw(uint16_t port, uint16_t val) {
     __asm__ volatile ("outw %0, %1" : : "a"(val), "Nd"(port));
 }
 
-static inline void outportd(uint16_t port, uint32_t val) {
-    __asm__ volatile ("outd %0, %1" : : "a"(val), "Nd"(port));
+static inline void outportl(uint16_t port, uint32_t val) {
+    __asm__ volatile ("outl %0, %1" : : "a"(val), "Nd"(port));
 }
 
 static inline uint8_t inportb(uint16_t port) {
@@ -18,15 +18,15 @@ static inline uint8_t inportb(uint16_t port) {
     return out;
 }
 
-static inline uint8_t inportw(uint16_t port) {
+static inline uint16_t inportw(uint16_t port) {
     uint16_t out;
     __asm__ volatile ("inw %1, %0" : "=a"(out) : "Nd"(port));
     return out;
 }
 
-static inline uint8_t inportd(uint16_t port) {
+static inline uint32_t inportl(uint16_t port) {
     uint32_t out;
-    __asm__ volatile ("ind %1, %0" : "=a"(out) : "Nd"(port));
+    __asm__ volatile ("inl %1, %0" : "=a"(out) : "Nd"(port));
     return out;
 }
 

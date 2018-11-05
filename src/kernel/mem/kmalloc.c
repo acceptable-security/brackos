@@ -1,5 +1,6 @@
 #include <mem/early.h>
 #include <mem/kmalloc.h>
+#include <mem/large.h>
 #include <mem/slab.h>
 #include <mem/slub.h>
 #include <stdbool.h>
@@ -19,8 +20,7 @@ void* kmalloc(unsigned long count) {
         return _kmalloc(count);
     }
     else {
-        // TODO - large allocations
-        return NULL;
+        return large_mem_alloc(count);
     }
 }
 
@@ -54,8 +54,8 @@ void kfree(void* addr) {
     if ( kern_mem_early && (uintptr_t) addr < kernel_mem_end ) {
         return;
     }
-    else if ( !_kfree(addr) ) {
-        // TODO - handle large allocation
+    else if ( !_kfree(addr) && !large_mem_dealloc(addr) ) {
+        // Neither allocators had it, panic!
     }
 }
 

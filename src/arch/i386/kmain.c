@@ -20,9 +20,11 @@
 #include <arch/i386/tss.h>
 #include <arch/i386/task.h>
 
+#include <devices/pci.h>
 #include <drivers/ps2.h>
 #include <drivers/rs232.h>
 #include <drivers/vga.h>
+#include <drivers/rtl8139.h>
 
 #include <mem/frame.h>
 #include <mem/slab.h>
@@ -41,8 +43,8 @@ extern uintptr_t our_gdt_phys;
 unsigned long kernel_base = 0xC0000000;
 
 void late_kernel_main() {
-    kprintf("Hello from late main!\n");
-
+    kprintf("late main: Hello from late main!\n");
+    rtl8139_init();         // Setup the RTL8139 drivers
     for ( ;; ) {}
 }
 
@@ -72,23 +74,24 @@ void load_interrupts(bool apic_overide) {
     idt_init();         // Intialize the Interrupt Descriptor Table
     idt_load();         // Load the intiailized IDT
 
-    kprintf("enabling the pic\n");
+    kprintf("kmain: enabling the pic\n");
     pic_enable(0x20, 0x28);
 
 #ifdef BRACKOS_CONF_ACPI
     bool acpi = acpi_init();
 
     if ( acpi && apic_supported() && !apic_overide ) {
-        kprintf("enabling the apic\n");
+        kprintf("kmain: enabling the apic\n");
 
         pic_disable();   // Disable the PIC
         lapic_enable();  // Enable the APIC
 
         ioapic_enable_irq(acpi_irq_remap(0), 0x20 + 0);
         ioapic_enable_irq(acpi_irq_remap(1), 0x20 + 1);
+        ioapic_enable_irq(acpi_irq_remap(11), 0x20 + 11);
         ioapic_enable_irq(acpi_irq_remap(12), 0x20 + 12);
 
-        kprintf("apic enabled: %d\n", lapic_is_enabled());
+        kprintf("kmain: apic enabled: %d\n", lapic_is_enabled());
 
 #ifdef BRACKOS_CONF_SMP
         smp_init();
@@ -118,11 +121,12 @@ void kernel_main(uint32_t multiboot_magic,
     ps2_init();             // Setup PS/2 drivers
     tss_init();             // Setup the task segment selector
     clock_init();           // Setup the clock subsystem
+    pci_init();             // Setup the PCI
 
     // Setup tasks with the first being the late kernel
     task_init((uintptr_t) late_kernel_main);
 
-    kprintf("enabling interrupts...\n");
+    kprintf("kmain: enabling interrupts...\n");
     __asm__ volatile ("sti");
 
     for ( ;; ) {}

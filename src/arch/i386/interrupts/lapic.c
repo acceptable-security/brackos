@@ -51,7 +51,7 @@ bool apic_supported() {
     int success = __get_cpuid(0x01, &_unused, &_unused, &_unused, &edx);
 
     if ( success == 0 ) {
-        kprintf("cpuid failed\n");
+        kprintf("lapic: cpuid failed\n");
         return false;
     }
 
@@ -154,7 +154,7 @@ int lapic_inservice_routine() {
 
 // Clear error status register
 void lapic_clear_error() {
-    kprintf("error status: %x\n", lapic_register_readl(APIC_REG_ERROR_STATUS));
+    kprintf("lapic: error status: %x\n", lapic_register_readl(APIC_REG_ERROR_STATUS));
     lapic_register_writel(APIC_REG_ERROR_STATUS, 0);
     lapic_register_writel(APIC_REG_ERROR_STATUS, 0);
 }
