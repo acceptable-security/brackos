@@ -82,7 +82,7 @@ void rtl8139_set_tcr(rtl8139_dev_t* dev) {
 		.ifg = 3
 	};
 
-	outportb(dev->io_addr + RTL8139_REG_TCR, tcr.data);
+	outportl(dev->io_addr + RTL8139_REG_TCR, tcr.data);
 	io_wait();
 	kprintf("rtl8139: tx reg set\n");
 }
