@@ -33,7 +33,9 @@ bool rs232_transmit_ready(uint16_t port) {
 // Write a single byte to a RS232 port
 void rs232_write_single(uint16_t port, uint8_t data) {
     // Wait for the previous write to be complete
-    while ( !rs232_transmit_ready(port) );
+    while ( !rs232_transmit_ready(port) ) {
+        io_wait();
+    }
 
     // Write
     outportb(port, data);
@@ -42,7 +44,9 @@ void rs232_write_single(uint16_t port, uint8_t data) {
 // Read a single byte to a RS232 port
 uint8_t rs232_read_single(uint16_t port) {
     // Wait for there to be data to read
-    while ( !rs232_data_received(port) );
+    while ( !rs232_data_received(port) ) {
+        io_wait();
+    }
 
     // Read the data
     return inportb(port);
