@@ -140,6 +140,7 @@ typedef union {
 
 // Transaction Status Description
 typedef union {
+	uint32_t data;
 	struct {
 		uint32_t size     : 13; // Descriptor Size
 		uint32_t own      : 1; // OWN
@@ -152,9 +153,26 @@ typedef union {
 		uint32_t owc      : 1; // Out of Window Collision
 		uint32_t tabt     : 1; // Transmit Abort
 		uint32_t crs      : 1; // Carrier Sense Lost
-	} __attribute((packed));
-	uint32_t data;
+	};
 } rtl8139_tsd_t;
+
+// Packet Header
+typedef union {
+	uint32_t data;
+	struct {
+		uint32_t rok  : 1; // Receive OK
+		uint32_t fae  : 1; // Frame Alignment Error
+		uint32_t crc  : 2; // CRC Error
+		uint32_t lng  : 1; // Long Packet
+		uint32_t runt : 1; // Runt Packet
+		uint32_t ise  : 1; // Invalid Symbol Error
+		uint32_t resv : 6; // Reserved
+		uint32_t bar  : 1; // Broadcast Adress Received
+		uint32_t pam  : 1; // Physical Address Matched
+		uint32_t mar  : 1; // Multicast Address Received
+		uint32_t len  : 16; // Length of the packet
+	};
+} rtl8139_packet_t;
 
 void rtl8139_interrupt(irq_regs_t* frame);
 

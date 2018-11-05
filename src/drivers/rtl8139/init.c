@@ -28,6 +28,31 @@ void rtl8139_interrupt(irq_regs_t* frame) {
 
 	if ( isr.rok == 1 ) {
 		kprintf("rtl8139: rok and roll\n");
+
+		rtl8139_packet_t header = *((rtl8139_packet_t*) g_dev->recv_buff_virt);
+
+		// Data is formatted in the buffer as
+		// [ 4 HEAD ][ N DATA ][ 4 CRC ]
+		// buff is at the beginning of len, and len = N + 4
+		// thus len will bring you to start of CRC.
+		uint32_t crc = *(uint32_t*) (((uintptr_t) g_dev->recv_buff_virt) + header.len);
+
+		// Print some basic header information for now
+		// Do CRC checks/ring buff later.
+		kprintf("rtl8139: found %d bytes\n", header.len);
+		kprintf("rtl8139: crc %x\n", crc);
+
+		kprintf("rtl8139: header flags: ");
+		if ( header.rok ) kprintf("rok ");
+		if ( header.fae ) kprintf("fae ");
+		if ( header.crc ) kprintf("crc ");
+		if ( header.lng ) kprintf("lng ");
+		if ( header.runt ) kprintf("runt ");
+		if ( header.ise ) kprintf("ise ");
+		if ( header.bar ) kprintf("bar ");
+		if ( header.pam ) kprintf("pam ");
+		if ( header.mar ) kprintf("mar ");
+		kprintf("\n");
 	}
 	
 	if ( isr.tok == 1 ) {
@@ -35,7 +60,7 @@ void rtl8139_interrupt(irq_regs_t* frame) {
 			rtl8139_tsd_t tsd = rtl8139_get_tsd(g_dev, i);
 
 			if ( tsd.tok == 1 ) {
-				kprintf("rtl8139: packet sent\n");    				
+				kprintf("rtl8139: packet sent from descriptor %d\n", i);
 			}
 		}
 	}
