@@ -1,6 +1,6 @@
 #include <arch/i386/io.h>
-#include <devices/pci.h>
-#include <devices/pci_str.h>
+#include <kernel/pci.h>
+#include <kernel/pci_str.h>
 #include <kprint.h>
 #include <stdlib.h>
 

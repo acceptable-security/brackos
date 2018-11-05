@@ -2,7 +2,7 @@
 #include <arch/i386/io.h>
 #include <arch/i386/irq.h>
 #include <arch/i386/paging.h>
-#include <devices/pci.h>
+#include <kernel/pci.h>
 #include <drivers/rtl8139.h>
 #include <kernel/config.h>
 #include <kprint.h>

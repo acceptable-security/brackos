@@ -20,7 +20,7 @@
 #include <arch/i386/tss.h>
 #include <arch/i386/task.h>
 
-#include <devices/pci.h>
+#include <kernel/pci.h>
 #include <drivers/ps2.h>
 #include <drivers/rs232.h>
 #include <drivers/vga.h>

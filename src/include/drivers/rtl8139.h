@@ -1,5 +1,5 @@
 #include <arch/i386/irq.h>
-#include <devices/pci.h>
+#include <kernel/pci.h>
 #include <stdint.h>
 
 // RTL8139 registers
