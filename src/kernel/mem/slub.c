@@ -16,6 +16,17 @@
 #define SLAB_COUNT(SLAB) (((uintptr_t)(SLAB)->next_slab) & 4095)
 #define SLAB_CREATE_NEXT(NEXT, SLAB) (mem_slab_t*) ((uintptr_t) SLAB | (uintptr_t) NEXT)
 
+#define SLAB_FROM_OBJ(SLAB) ((mem_slab_t*) (((uintptr_t) (SLAB)) & ~(SLAB_SIZE - 1)))
+
+// Derive mmap flag from SLAB
+#if SLAB_SIZE == 0x1000
+#define SLAB_MMAP_FLAG  MMAP_PG_ALIGN
+#elif SLAB_SIZE == 0x2000
+#define SLAB_MMAP_FLAG MMAP_2PG_ALIGN
+#else
+#define SLAB_MMAP_FLAG 0
+#endif
+
 // Create the cache_cache in the data section.
 mem_cache_t cache_cache = {
     .next_cache = NULL,
@@ -110,7 +121,7 @@ void mem_cache_add(mem_cache_t* cache) {
 // Allocate a new slab for a specific cache
 mem_slab_t* mem_slab_new(mem_cache_t* cache) {
     // Allocate a new slab
-    mem_slab_t* slab = (mem_slab_t*) memmap(NULL, SLAB_SIZE, MMAP_URGENT);
+    mem_slab_t* slab = (mem_slab_t*) memmap(NULL, SLAB_SIZE, MMAP_URGENT | SLAB_MMAP_FLAG);
 
     if ( slab == NULL ) {
         return NULL;
@@ -257,39 +268,43 @@ void* mem_cache_alloc(const char* name) {
 }
 
 mem_slab_t* mem_cache_find_slab(mem_cache_t* cache, void* object) {
-    uintptr_t obj_n = (uintptr_t) object;
+    #if SLAB_SIZE % 0x1000 == 0
+        return SLAB_FROM_OBJ(object);
+    #else
+        uintptr_t obj_n = (uintptr_t) object;
 
-    // Check the semi list
-    mem_slab_t* head = cache->cpu_caches[GET_CPU()].semi;
+        // Check the semi list
+        mem_slab_t* head = cache->cpu_caches[GET_CPU()].semi;
 
-    while ( head != NULL ) {
-        uintptr_t start = (uintptr_t) head;
-        uintptr_t end = start + SLAB_SIZE;
+        while ( head != NULL ) {
+            uintptr_t start = (uintptr_t) head;
+            uintptr_t end = start + SLAB_SIZE;
 
-        if ( obj_n >= start && obj_n <= end ) {
-            return head;
+            if ( obj_n >= start && obj_n <= end ) {
+                return head;
+            }
+
+            head = SLAB_NEXT(head);
         }
 
-        head = SLAB_NEXT(head);
-    }
+        // Check the full list
+        head = cache->cpu_caches[GET_CPU()].full;
 
-    // Check the full list
-    head = cache->cpu_caches[GET_CPU()].full;
+        while ( head != NULL ) {
+            uintptr_t start = (uintptr_t) head;
+            uintptr_t end = start + SLAB_SIZE;
 
-    while ( head != NULL ) {
-        uintptr_t start = (uintptr_t) head;
-        uintptr_t end = start + SLAB_SIZE;
+            kprintf("> bounds %p - %p\n", start, end);
 
-        kprintf("> bounds %p - %p\n", start, end);
+            if ( obj_n >= start && obj_n <= end ) {
+                return head;
+            }
 
-        if ( obj_n >= start && obj_n <= end ) {
-            return head;
+            head = SLAB_NEXT(head);
         }
 
-        head = SLAB_NEXT(head);
-    }
-
-    return NULL;
+        return NULL;
+    #endif
 }
 
 // Deallocate an object from a cache
@@ -310,14 +325,7 @@ void mem_cache_dealloc(const char* name, void* object) {
     }
 
     // Locate the slab from the object
-    
-    mem_slab_t* slab = NULL;
-    
-    switch ( SLAB_SIZE ) {
-        case 0x1000: slab = (mem_slab_t*) ((uintptr_t) object & ~0x1FFF);
-        case 0x2000: slab = (mem_slab_t*) ((uintptr_t) object & ~0xFFF);
-        default:     slab = mem_cache_find_slab(cache, object);
-    }    
+    mem_slab_t* slab = mem_cache_find_slab(cache, object);
 
     if ( slab == NULL ) {
         kprintf("failed to find slab for %p\n", object);

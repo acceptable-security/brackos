@@ -3,6 +3,7 @@
 #include <mem/slab.h>
 #include <mem/slub.h>
 #include <mem/vasa.h>
+#include <mem/mmap.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -298,17 +299,42 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
     vasa_node_t* prev = NULL;
     vasa_node_t* head = global_asa.free_head;
 
+    // Get padding from flags
+    unsigned long pad = HAS_FLAG(flags, MMAP_PG_ALIGN)  ? 0x1000 :
+                        HAS_FLAG(flags, MMAP_2PG_ALIGN) ? 0x2000 :
+                                                          0x0000;
+
+    unsigned long search = size + pad;
+
     while ( head != NULL ) {
-        if ( head->length >= size ) {
+        if ( head->length >= search ) {
             // We found space, allocate from it.
-            void* ptr = head->base;
+            uintptr_t _ptr = (uintptr_t) head->base;
+
+            // Align and calculate waste
+            void* ptr;
+            unsigned long waste;
+
+            // Handle padding
+            if ( pad > 0 ) {
+                ptr = (void*) ((((uintptr_t) _ptr) + pad) & ~(pad - 1));                
+                waste = (uintptr_t) ptr - _ptr;
+            }
+            else {
+                ptr = (void*) _ptr;
+                waste = 0;
+            }
+
+            // TODO - allocate a new vasa node for waste.
+            size += waste;
             vasa_node_t* node;
 
-            if ( head->length > size ) {
+            if ( head->length > search ) {
                 // Cut our chunk out of the start of the node.
                 head->length -= size;
                 head->base += size;
 
+                // Create a new node
                 node = vasa_node_alloc();
             }
             else {
@@ -316,10 +342,16 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
                 if ( prev ) {
                     prev->next = head->next;
                 }
+                else {
+                    global_asa.free_head = head->next;
+                }
 
+                // Use old node
                 node = head;
             }
 
+            // Repurpose old/setup new node by removing links
+            // and setting eveything up
             node->next = NULL;
             node->type = type;
             node->base = ptr;
