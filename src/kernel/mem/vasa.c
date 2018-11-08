@@ -10,6 +10,8 @@
 #include <kprint.h>
 #include <math.h>
 
+#define APPLY_PAD(VAL, PAD) (((VAL) + (PAD) - 1) & ~(PAD - 1))
+
 vasa_t global_asa;
 
 // Checks if a is directly next to b (and can be merged)
@@ -42,7 +44,7 @@ vasa_node_t* vasa_node_alloc() {
 }
 
 // Add a node to the linked lists.
-void vasa_add_node(vasa_node_t* node, bool used) {
+static void vasa_add_node(vasa_node_t* node, bool used) {
     if ( node == NULL ) {
         return;
     }
@@ -108,7 +110,7 @@ void vasa_add_node(vasa_node_t* node, bool used) {
 
 // Attempt to mark a specific area of memory used
 bool vasa_mark(uintptr_t base, unsigned long length, bool used, unsigned long flags) {
-    // Make sure everything is merged so we odn't have any misproper finds.
+    // Make sure everything is merged so we don't have any misproper finds.
     vasa_node_t* prev = NULL;
     vasa_node_t* head;
 
@@ -309,27 +311,41 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
     while ( head != NULL ) {
         if ( head->length >= search ) {
             // We found space, allocate from it.
-            uintptr_t _ptr = (uintptr_t) head->base;
+            uintptr_t base = (uintptr_t) head->base;
 
             // Align and calculate waste
             void* ptr;
             unsigned long waste;
+            vasa_node_t* node;
+            vasa_node_t* waste_node = NULL;
 
             // Handle padding
             if ( pad > 0 ) {
-                ptr = (void*) ((((uintptr_t) _ptr) + pad) & ~(pad - 1));                
-                waste = (uintptr_t) ptr - _ptr;
+                ptr = (void*) APPLY_PAD((uintptr_t) base, pad);
+                waste = (uintptr_t) ptr - base;
+
+                // If theres waste allocate a waste node
+                if ( waste > 0 ) {
+                    kprintf("vasa: allocating waste node of %d bytes\n", waste);
+                    waste_node = vasa_node_alloc();
+
+                    // Goes behind the head node
+                    waste_node->next = head;
+                    waste_node->type = type;
+                    waste_node->base = head->base;
+                    waste_node->length = waste;
+                    waste_node->flags = flags;
+
+                    head->base = (void*) base;
+                    head->length = head->length - waste;                    
+                }
             }
             else {
-                ptr = (void*) _ptr;
+                ptr = (void*) base;
                 waste = 0;
             }
 
-            // TODO - allocate a new vasa node for waste.
-            size += waste;
-            vasa_node_t* node;
-
-            if ( head->length > search ) {
+            if ( head->length > size ) {
                 // Cut our chunk out of the start of the node.
                 head->length -= size;
                 head->base += size;
@@ -359,7 +375,13 @@ void* vasa_alloc(vasa_memtype_t type, unsigned long size, unsigned long flags) {
             node->flags = flags;
 
             vasa_add_node(node, true);
+
+            if ( waste_node != NULL ) {
+                vasa_add_node(waste_node, false);
+            }
+
             spinlock_unlock(global_asa.lock);
+
             return ptr;
         }
 
