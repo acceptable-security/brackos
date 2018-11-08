@@ -41,6 +41,11 @@ image:
 	grub-mkrescue -o brackos.iso isodir
 
 run:
-	qemu-system-x86_64 -hda brackos.iso -d guest_errors -no-reboot -serial stdio -smp 2 -net nic,model=rtl8139
+	qemu-system-x86_64 -hda brackos.iso \
+					   -d guest_errors \
+					   -no-reboot \
+					   -serial stdio \
+					   -smp 2 \
+					   -net nic,model=rtl8139
 
 .PHONY: clean kernel run
