@@ -6,6 +6,7 @@ fun kernel experimentations
 ## TODO
 
 - [x] vasa waste node
+- [ ] test waste node
 - [ ] test big alloc
 - [ ] ring buffer
 - [ ] yield/rwlock
