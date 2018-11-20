@@ -6,9 +6,9 @@ fun kernel experimentations
 ## TODO
 
 - [x] vasa waste node
+- [x] ring buffer
 - [ ] test waste node
 - [ ] test big alloc
-- [ ] ring buffer
 - [ ] yield/rwlock
 -  net
 	- [ ] rtl8139 to ring buffer
