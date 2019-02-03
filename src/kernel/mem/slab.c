@@ -180,7 +180,7 @@ void* mem_cache_alloc(const char* name) {
 
     // Find the cache
     while ( cache != NULL ) {
-        if ( strcmp(cache->name, name) ) {
+        if ( strcmp(cache->name, name) == 0 ) {
             break;
         }
 

@@ -61,5 +61,6 @@ void mem_cache_dealloc(const char* name, void* object);
 void kmalloc_init();
 void* _kmalloc(unsigned int size);
 bool _kfree(void* ptr);
+void* _krealloc(void* addr, unsigned long size);
 
 #endif

@@ -1,11 +1,10 @@
-#include <arch/i386/irq.h>
-#include <arch/i386/scheduler.h>
-#include <arch/i386/task.h>
-#include <arch/i386/tss.h>
+#include <kernel/scheduler.h>
+#include <kernel/task.h>
 #include <mem/mmap.h>
 #include <stdlib.h>
 #include <string.h>
 #include <kprint.h>
+#include <list.h>
 
 task_t* task_pid_table[MAX_TASKS];
 
@@ -44,18 +43,10 @@ task_t* task_create(char* name) {
         return NULL;
     }
 
-    // Create a stack for handling interrupts
-    task->int_stack_bottom = (uintptr_t) memmap(NULL, TASK_STACK_SIZE, MMAP_RW | MMAP_URGENT);
+    cpu_task_alloc(&task->cpu);
 
-    if ( task->int_stack_bottom == 0 ) {
-        kprintf("tasks: failed to create task interrupt stack\n");
-        kfree(task);
-        return NULL;
-    }
-
-    task->int_stack_top = task->int_stack_bottom + TASK_STACK_SIZE;
-
-    memset((void*) task->int_stack_bottom, 0, TASK_STACK_SIZE);
+    task->files.max_fid = 0;
+    list_init(&task->files.pairs);
 
     return task;
 }
@@ -70,47 +61,9 @@ task_t* task_kernel_create(char* name, uintptr_t address) {
         return NULL;
     }
 
-    // Allocate a stack
-    task->stack_bottom = (uintptr_t) memmap(NULL, TASK_STACK_SIZE, MMAP_RW | MMAP_URGENT);
-
-    if ( task->stack_bottom == 0 ) {
-        kprintf("tasks: failed to create stack\n");
-        task_dealloc(task);
-        return NULL;
-    }
-
-    task->stack_top = task->stack_bottom + TASK_STACK_SIZE;
-
-    memset((void*) task->stack_bottom, 0, TASK_STACK_SIZE);
-
-    // Leave room for the IRQ registers
-    task->stack_top -= sizeof(irq_regs_t);
-    task->user_regs = (irq_regs_t*) task->stack_top;
-
-    // Initialize the registers.
-    task->user_regs->eflags = 0x00000202;
-    task->user_regs->cs = 0x8;
-    task->user_regs->eip = address;
-    task->user_regs->ebp = task->stack_top;
-    task->user_regs->esp = task->stack_top;
-    task->user_regs->ds = 0x10;
-    task->user_regs->fs = 0x10;
-    task->user_regs->es = 0x10;
-    task->user_regs->fs = 0x10;
+    cpu_task_kernel_init(&task->cpu, address);
 
     return task;
-}
-
-// Schedule a task during an interrupt.
-void task_schedule(task_t* task) {
-    // Update tss
-    tss_update(task->int_stack_top);
-    irq_send_eoi(0); // TODO: load IRQ from somewhere
-
-    // Here it goes...
-    __asm__ volatile("mov %0, %%esp;"   // Load the task stack
-                     "jmp irq_exit;"    // Load the new registers
-    			     : :"r"(task->user_regs));
 }
 
 // Attempts to set a task into the killed state.
@@ -157,15 +110,17 @@ void task_dealloc(task_t* task) {
     }
 
     // Deallocate task resources
-    if ( task->stack_bottom ) {
-        memunmap((void*) task->stack_bottom, TASK_STACK_SIZE);
-    }
-
-    if ( task->int_stack_bottom ) {
-        memunmap((void*) task->int_stack_bottom, TASK_STACK_SIZE);
-    }
+    cpu_task_dealloc(&task->cpu);
 
     kfree(task);
+}
+
+void task_reaper() {
+    int i = 0;
+
+    while ( 1 ) {
+        i++;
+    }  
 }
 
 // Initialize the tasking system.
@@ -174,7 +129,7 @@ void task_init(uintptr_t initial_task_fn) {
         task_pid_table[i] = NULL;
     }
 
-    task_t* initial_task = task_kernel_create("A", initial_task_fn);
+    task_t* initial_task = task_kernel_create("init", initial_task_fn);
 
     if ( initial_task == NULL ) {
         kprintf("tasks: failed to make initial task\n");

@@ -5,3 +5,4 @@ kernel.bin
 qemu.log
 .gdb_history
 brackos.iso
+.cquery_cache/

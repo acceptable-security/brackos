@@ -82,6 +82,7 @@ ap_boot_pmode_paging:
     ; Load our stack
     mov ebx, [ap_stack_list]
     mov esp, [ebx + eax * 4]
+    add esp, 8
     mov ebp, esp
 
     call ap_main

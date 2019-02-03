@@ -1,8 +1,10 @@
+global exception_common_stub
 global irq_common_stub
 global irq_empty_stub
 global irq_exit
 
 extern irq_general_handler
+extern exception_handle
 
 irq_common_stub:
     cli
@@ -32,5 +34,25 @@ irq_exit:
     pop ds
     popad
     iret
+
+exception_common_stub:
+    cli
+    pushad
+    push ds
+    push es
+    push fs
+    push gs
+
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    ; Push the stack pointer with all those juicy registers.
+    mov eax, esp
+    push eax
+    call exception_handle
+    pop eax
 
 irq_empty_stub: iret

@@ -6,7 +6,7 @@ CC = i386-elf-gcc
 LD = i386-elf-gcc
 
 #FLAGS
-DEFAULT_CFLAGS = -Wall -Werror -O -fomit-frame-pointer -ffreestanding  -finline-functions -c -g -std=c11
+DEFAULT_CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ffreestanding  -finline-functions -c -g -std=c11
 ASMFLAGS = -f elf
 CFLAGS = $(DEFAULT_CFLAGS) -m32 -Isrc/include/ -march=i386
 LDFLAGS = -m32 -ffreestanding -O2 -nostdlib -g
@@ -46,6 +46,6 @@ run:
 					   -no-reboot \
 					   -serial stdio \
 					   -smp 2 \
-					   -net nic,model=rtl8139
+					   -net nic,model=rtl8139 
 
 .PHONY: clean kernel run

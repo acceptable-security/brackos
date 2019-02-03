@@ -39,6 +39,10 @@ void* kcalloc(unsigned long count, unsigned long size) {
 
 // Kernel realloc
 void* krealloc(void* addr, unsigned long size) {
+    if ( addr == NULL ) {
+        return kmalloc(size);
+    }
+    
     // Early kernel memory can't be realloc
     if ( kern_mem_early && (uintptr_t) addr < kernel_mem_end ) {
         return NULL;

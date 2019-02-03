@@ -36,6 +36,7 @@ void rtl8139_interrupt(irq_regs_t* frame) {
 		// buff is at the beginning of len, and len = N + 4
 		// thus len will bring you to start of CRC.
 		uint32_t crc = *(uint32_t*) (((uintptr_t) g_dev->recv_buff_virt) + header.len);
+		char* data = (char*) (((uintptr_t) g_dev->recv_buff_virt) + 4);
 
 		// Print some basic header information for now
 		// Do CRC checks/ring buff later.
@@ -43,16 +44,19 @@ void rtl8139_interrupt(irq_regs_t* frame) {
 		kprintf("rtl8139: crc %x\n", crc);
 
 		kprintf("rtl8139: header flags: ");
-		if ( header.rok ) kprintf("rok ");
-		if ( header.fae ) kprintf("fae ");
-		if ( header.crc ) kprintf("crc ");
-		if ( header.lng ) kprintf("lng ");
+		if ( header.rok )  kprintf("rok ");
+		if ( header.fae )  kprintf("fae ");
+		if ( header.crc )  kprintf("crc ");
+		if ( header.lng )  kprintf("lng ");
 		if ( header.runt ) kprintf("runt ");
-		if ( header.ise ) kprintf("ise ");
-		if ( header.bar ) kprintf("bar ");
-		if ( header.pam ) kprintf("pam ");
-		if ( header.mar ) kprintf("mar ");
+		if ( header.ise )  kprintf("ise ");
+		if ( header.bar )  kprintf("bar ");
+		if ( header.pam )  kprintf("pam ");
+		if ( header.mar )  kprintf("mar ");
 		kprintf("\n");
+
+		// Read data into net buffer
+		net_buf_read(g_dev->net_buf, data, header.len - 4);
 	}
 	
 	if ( isr.tok == 1 ) {
@@ -149,6 +153,15 @@ void rtl8139_init_buffer(rtl8139_dev_t* dev) {
 
 		kprintf("rtl8139: tx buffer at %p (mapped at %p)\n", dev->tx_buff_phys[i], dev->tx_buff_virt[i]);
 	}
+
+	dev->net_buf = net_buf_init(RTL8139_RECV_BUFF);
+
+	if ( !dev->net_buf ) {
+		kprintf("rtl8139: failed to init netbuf\n");
+		return;
+	}
+
+	kprintf("rtl8139: net buf of %d bytes allocated\n", RTL8139_RECV_BUFF);
 }
 
 // Run the startup sequence for the RTL8139
@@ -245,7 +258,7 @@ void rtl8139_init() {
 		return;
 	}
 
-	memset(dev, 0, sizeof(rtl8139_dev_t));
+	MEMZERO(dev);
 	dev->pci_dev = pci_dev;
 
 	// Do the PCI setup
@@ -263,7 +276,7 @@ void rtl8139_init() {
 
 	rtl8139_startup(dev);
 
-
+	// Send a test packet
 	char test[80];
 	for ( int i = 0; i < 80; i++ ) {
 		test[i] = (char) i;

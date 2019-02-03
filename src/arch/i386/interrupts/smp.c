@@ -176,7 +176,7 @@ void smp_init() {
         kprintf("smp: sending startup to cpu %d\n", i);
         lapic_send_startup(i, 7);
 
-        /// Wait for boot flag to be set
+        // Wait for boot flag to be set
         kprintf("smp: waiting on cpu %d\n", i);
         while ( !(cpu_init_bitmap & (1 << i)) );
 

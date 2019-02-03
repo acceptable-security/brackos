@@ -4,6 +4,8 @@
 #include <kprint.h>
 #include <math.h>
 
+#include <kernel/spinlock.h>
+
 // Print out a character
 void kputch(char c) {
     // TODO - handle new lines, line wrapping, etc.
@@ -124,19 +126,22 @@ void kprint_memory(unsigned long value) {
         }
     }
 
-    kprintf("%d", value);
+    kprint_uint(value);
 
     if ( prefix != 0 ) {
-        kprintf("%c", prefix);
+        kputch(prefix);
     }
 
-    kprintf("B");
+    kputch('B');
 }
+
+spinlock_t lock = 0;
 
 // Print out a formatted string.
 // Currently WIP, and only supports basic functionality.
 // Has a custom one: %m, to print memory constants.
 void kprintf(const char* format, ...) {
+    spinlock_lock(lock);
     va_list args;
     char curr;
 
@@ -206,4 +211,6 @@ void kprintf(const char* format, ...) {
             kputch(curr);
         }
     }
+
+    spinlock_unlock(lock);
 }

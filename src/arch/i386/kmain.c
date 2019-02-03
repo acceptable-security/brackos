@@ -18,13 +18,16 @@
 #include <kernel/clock.h>
 
 #include <arch/i386/tss.h>
-#include <arch/i386/task.h>
+#include <kernel/task.h>
+#include <kernel/scheduler.h>
 
 #include <kernel/pci.h>
 #include <drivers/ps2.h>
 #include <drivers/rs232.h>
 #include <drivers/vga.h>
 #include <drivers/rtl8139.h>
+
+#include <kernel/vfs.h>
 
 #include <mem/frame.h>
 #include <mem/slab.h>
@@ -44,14 +47,11 @@ unsigned long kernel_base = 0xC0000000;
 
 void late_kernel_main() {
     kprintf("late main: Hello from late main!\n");
+    vfs_init();             // Setup the file system
+    pci_init();             // Setup the PCI
     rtl8139_init();         // Setup the RTL8139 drivers
+    ps2_init();             // Setup PS/2 drivers
     for ( ;; ) {}
-}
-
-// Load IO devices
-void load_io() {
-    rs232_init(); // Enable RS232 serial i/o
-    vga_init(); // Enable VGA output
 }
 
 // Load memory
@@ -108,7 +108,7 @@ void kernel_main(uint32_t multiboot_magic,
                  multiboot_info_t* multiboot,
                  uintptr_t initial_pd,
                  uintptr_t kernel_heap_start,
-                 uint32_t kernel_heap_size) {
+                 size_t kernel_heap_size) {
     if ( multiboot_magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
         // TODO - have an actual panic
         for ( ;; ) {}
@@ -116,12 +116,11 @@ void kernel_main(uint32_t multiboot_magic,
 
     gdt_init();             // Initialize the global descriptor table
     load_memory(multiboot, kernel_heap_start, kernel_heap_size); // Load memory
-    load_io();              // Load some I/O devices
+    rs232_init();           // Enable RS232 serial
+    vga_init();             // Enable VGA output
     load_interrupts(false); // Load interrupts
-    ps2_init();             // Setup PS/2 drivers
     tss_init();             // Setup the task segment selector
     clock_init();           // Setup the clock subsystem
-    pci_init();             // Setup the PCI
 
     // Setup tasks with the first being the late kernel
     task_init((uintptr_t) late_kernel_main);

@@ -1,5 +1,6 @@
 #include <arch/i386/irq.h>
 #include <kernel/pci.h>
+#include <net/net_buf.h>
 #include <stdint.h>
 
 // RTL8139 registers
@@ -29,6 +30,7 @@
 // Size of the receive buffer (3 pages w/ 4K pages)
 #define RTL8139_BUFF_SIZE 0x3000
 #define RTL8139_MAX_PACKET 1792
+#define RTL8139_RECV_BUFF 10 * 0x3000
 
 typedef struct {
 	// Device information
@@ -44,6 +46,8 @@ typedef struct {
 	void* tx_buff_virt[4];
 	void* tx_buff_phys[4];
 	uint8_t curr_buff;
+
+	net_buf_t* net_buf;
 
 	// Ethernet Information
 	uint8_t mac[6];

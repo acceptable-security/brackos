@@ -79,7 +79,7 @@ mem_cache_t* mem_cache_new(const char* name,
         return NULL;
     }
 
-    memcpy(cache->name, name, strlen(name) + 1);
+    memcpy(cache->name, (char*) name, strlen(name) + 1);
 
     cache->object_size = object_size;
     cache->min = min;
@@ -196,7 +196,7 @@ void* mem_cache_alloc(const char* name) {
 
     // Find the cache
     while ( cache != NULL ) {
-        if ( strcmp(cache->name, name) ) {
+        if ( strcmp(cache->name, name) == 0 ) {
             break;
         }
 
@@ -313,7 +313,7 @@ void mem_cache_dealloc(const char* name, void* object) {
 
     // Find the cache
     while ( cache != NULL ) {
-        if ( strcmp(cache->name, name) == true ) {
+        if ( strcmp(cache->name, name) == 0 ) {
             break;
         }
 

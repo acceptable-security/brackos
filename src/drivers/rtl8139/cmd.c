@@ -89,7 +89,7 @@ void rtl8139_set_tcr(rtl8139_dev_t* dev) {
 
 void rtl8139_enable_rxtx(rtl8139_dev_t* dev) {
 	rtl8139_cmd_t cmd = { .re = 1, .te = 1 };
-	kprintf("cmd: %x\n", cmd.data);
+	
 	outportb(dev->io_addr + RTL8139_REG_CMD, cmd.data);
 	io_wait();
 	kprintf("rtl8139: enabling rx & tx\n");

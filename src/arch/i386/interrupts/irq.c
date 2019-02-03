@@ -3,6 +3,7 @@
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
 #include <arch/i386/io.h>
+#include <kernel/task.h>
 
 #include <kprint.h>
 #include <stdbool.h>
@@ -88,6 +89,10 @@ irq_regs_t* irq_get_current_regs() {
     return irq_current_regs;
 }
 
+void irq_save_regs(cpu_task_t* cpu_task) {
+    cpu_task->user_regs = irq_get_current_regs();
+}
+
 // Initializes 16 empty IRQs
 void irq_init() {
     // Setup the 16 common IRQs
@@ -95,5 +100,5 @@ void irq_init() {
         idt_set_gate(i + 0x20, (uintptr_t) irq_common_stub, 0x08, 0x8E);
     }
 
-    kprintf("irqs setup\n");
+    kprintf("irq: init complete\n");
 }

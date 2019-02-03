@@ -11,6 +11,7 @@ cas:
 
 	mov eax, 0
 	setz al
+	xor eax, 1
 
 	pop ebp
 	ret

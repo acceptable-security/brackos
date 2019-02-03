@@ -1,6 +1,7 @@
-#include <arch/i386/irq.h>
-#include <arch/i386/scheduler.h>
-#include <arch/i386/task.h>
+#define _IGNORE_CURRENT_TASK
+#include <arch/i386/cpu_task.h>
+#include <kernel/scheduler.h>
+#include <kernel/task.h>
 #include <kernel/clock.h>
 #include <kprint.h>
 
@@ -24,14 +25,14 @@ void scheduler_advance() {
 
         if ( !first_run ) {
             // Save the old stack
-            previous_task->user_regs = irq_get_current_regs();
+            cpu_task_deschedule(&previous_task->cpu);
         }
         else {
             first_run = false;
         }
 
         // Load the new one
-        task_schedule(current_task);
+        cpu_task_schedule(&current_task->cpu);
     }
 }
 

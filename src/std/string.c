@@ -1,5 +1,8 @@
+#include <mem/kmalloc.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
 
 unsigned long strlen(const char* str) {
     unsigned long i = 0;
@@ -27,20 +30,30 @@ unsigned long strnlen(const char* str, unsigned long n) {
     return i;
 }
 
-bool strcmp(const char* a, const char* b) {
-    int len = strlen(a);
+char* strdup(const char* str) {
+    size_t len = strlen(str);
+    char* data = (char*) kmalloc(len + 1);
 
-    if ( !a || !b || len != strlen(b) ) {
-        return false;
+    if ( data == NULL ) {
+        return NULL;
     }
 
-    for ( int i = 0; i < len; i++ ) {
-        if ( a[i] != b[i] ) {
-            return false;
-        }
+    memcpy(data, str, len + 1);
+
+    return data;
+}
+
+ssize_t strcmp(const char* a, const char* b) {
+    while ( *a && *a == *b ) {
+        a++;
+        b++;
     }
 
-    return true;
+    return *a - *b;
+}
+
+void strcpy(const char* a, const char* b) {
+    memcpy((void*) a, (void*) b, strlen(b) + 1);
 }
 
 void* memcpy(void* dest, const void* src, unsigned long count) {
@@ -54,7 +67,7 @@ void* memcpy(void* dest, const void* src, unsigned long count) {
     return dest;
 }
 
-void* memset(void* dest, unsigned char c, unsigned int count) {
+void* memset(void* dest, unsigned char c, unsigned long count) {
     unsigned char* _dest = (unsigned char*) dest;
 
     for ( int i = 0; i < count; i++ ) {
@@ -64,7 +77,7 @@ void* memset(void* dest, unsigned char c, unsigned int count) {
     return dest;
 }
 
-void* memsetw(void* dest, unsigned short c, unsigned int count) {
+void* memsetw(void* dest, unsigned short c, unsigned long count) {
     unsigned short* _dest = (unsigned short*) dest;
 
     for ( int i = 0; i < count; i++ ) {

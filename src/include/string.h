@@ -1,8 +1,11 @@
+#include <stdint.h>
 #include <stdbool.h>
 
 unsigned long strlen(const char* str);
 unsigned long strnlen(const char* str, unsigned long n);
-bool strcmp(const char* a, const char* b);
+ssize_t strcmp(const char* a, const char* b);
+void strcpy(const char* a, const char* b);
+char* strdup(const char* a);
 
 void* memcpy(void* dest, const void* src, unsigned long count);
 void* memset(void* dest, unsigned char c, unsigned long count);

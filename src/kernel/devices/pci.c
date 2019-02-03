@@ -121,7 +121,7 @@ pci_device_t* pci_device_new(uint16_t bus, uint16_t slot, uint16_t function) {
             extra1->primary_bus = pci_config_read(bus, slot, function, 0x18) & 0xFF;
             extra1->secondary_bus = (pci_config_read(bus, slot, function, 0x18) >> 8) & 0xFF;
             extra1->subordinate_bus = pci_config_read(bus, slot, function, 0x1A) & 0xFF;
-            extra1->secondary_latency = (pci_config_read(bus, slot, function, 0x1A) >> 8) && 0xFF;
+            extra1->secondary_latency = (pci_config_read(bus, slot, function, 0x1A) >> 8) & 0xFF;
 
             extra1->io_base = pci_config_read(bus, slot, function, 0x1C) & 0xFF;
             extra1->io_limit = (pci_config_read(bus, slot, function, 0x1C) >> 8) & 0xFF;
