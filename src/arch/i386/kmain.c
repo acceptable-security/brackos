@@ -45,33 +45,35 @@ extern void* page_table_base;
 extern uintptr_t our_gdt_phys;
 unsigned long kernel_base = 0xC0000000;
 
-void file_test() {
-    kprintf("doing file tests\n");
-     // Test
-    kprintf("creating files\n");
-    fid_t fid1 = file_open("/test.txt", O_WRT);
-    fid_t fid2 = file_open("/test2.txt", O_WRT);
-    kprintf("closing files\n");
-    file_close(fid1);
-    file_close(fid2);
+void quick_create(char* path) {
+    file_close(file_open(path, O_WRT));
+    kprintf("created file %s\n", path);
+}
 
-    kprintf("alloc files list\n");
-    size_t count = file_list("/", NULL);
+void quick_list(char* path) {
+    kprintf("ls: %s\n", path);
+    size_t count = file_list(path, NULL);
     fid_t* list = (fid_t*) kmalloc(sizeof(size_t) * count);
 
-    kprintf("listing files\n");
-    file_list("/", list);
+    file_list(path, list);
     char name[MAXFILEPATH];
     memset(name, 0, MAXFILEPATH);
 
-    kprintf("found %d files\n", count);
-
     for ( size_t i = 0; i < count; i++ ) {
         file_read(list[i], name, STAT_KEY('NAME'));
-        kprintf("found %s\n", name);
+        kprintf("- %s\n", name);
     }
+}
 
-    kprintf("file tests done\n");
+void file_test() {
+    kprintf("doing file tests\n");
+
+    quick_create("/test");
+    quick_create("/asdf");
+    quick_create("/test/test.txt");
+
+    quick_list("/");
+    quick_list("/test");
 }
 
 void late_kernel_main() {

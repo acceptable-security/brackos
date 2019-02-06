@@ -6,10 +6,11 @@
 #include <kprint.h>
 
 file_t* file_alloc(char* name, fs_t* fs, void* data) {
-	size_t len = strnlen(name, MAXFILEPATH + 1) + 1;
+	size_t len = strnlen(name, MAXFILEPATH) + 1;
 
 	if ( len > MAXFILEPATH ) {
 		// TODO - error messages
+		kprintf("file: name too long\n");
 		return NULL;
 	}
 
@@ -40,7 +41,8 @@ void file_add_child(file_t* root, file_t* child) {
 		root->child = child;
 	}
 	else {
-		file_add_friend(root->child, child);
+		child->next = root->child;
+		root->child = child;
 	}
 }
 
@@ -89,7 +91,7 @@ fid_t file_open(char* path, file_flags_t flags) {
 		return FID_INVALID;
 	}
 
-	file_ref_t* ref = fs->op.open(fs, &path[strlen(found_path)], flags);
+	file_ref_t* ref = fs->op.open(fs, &path[strlen(found_path) - 1], flags);
 
 	if ( ref == NULL ) {
 		kprintf("file: failed to get reference\n");
@@ -133,14 +135,14 @@ size_t file_list(char* path, fid_t* fids) {
 	}
 
 	/* TODO: literally anything except this */
-	size_t count = fs->op.list(fs, &path[strlen(found_path)], NULL);
+	size_t count = fs->op.list(fs, &path[strlen(found_path) - 1], NULL);
 	file_ref_t** tmp = kmalloc(sizeof(file_ref_t*) * count);
 
 	if ( tmp == NULL ) {
 		return 0;
 	}
 
-	fs->op.list(fs, &path[strlen(found_path)], tmp);
+	fs->op.list(fs, &path[strlen(found_path) - 1], tmp);
 
 	for ( size_t i = 0; i < count; i++ ) {
 		fids[i] = tmp[i]->fid;
