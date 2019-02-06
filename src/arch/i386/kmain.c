@@ -45,12 +45,43 @@ extern void* page_table_base;
 extern uintptr_t our_gdt_phys;
 unsigned long kernel_base = 0xC0000000;
 
+void file_test() {
+    kprintf("doing file tests\n");
+     // Test
+    kprintf("creating files\n");
+    fid_t fid1 = file_open("/test.txt", O_WRT);
+    fid_t fid2 = file_open("/test2.txt", O_WRT);
+    kprintf("closing files\n");
+    file_close(fid1);
+    file_close(fid2);
+
+    kprintf("alloc files list\n");
+    size_t count = file_list("/", NULL);
+    fid_t* list = (fid_t*) kmalloc(sizeof(size_t) * count);
+
+    kprintf("listing files\n");
+    file_list("/", list);
+    char name[MAXFILEPATH];
+    memset(name, 0, MAXFILEPATH);
+
+    kprintf("found %d files\n", count);
+
+    for ( size_t i = 0; i < count; i++ ) {
+        file_read(list[i], name, STAT_KEY('NAME'));
+        kprintf("found %s\n", name);
+    }
+
+    kprintf("file tests done\n");
+}
+
 void late_kernel_main() {
     kprintf("late main: Hello from late main!\n");
-    vfs_init();             // Setup the file system
     pci_init();             // Setup the PCI
     rtl8139_init();         // Setup the RTL8139 drivers
     ps2_init();             // Setup PS/2 drivers
+    vfs_init();             // Setup the file system
+
+    file_test();
     for ( ;; ) {}
 }
 

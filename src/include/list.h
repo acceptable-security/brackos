@@ -17,7 +17,7 @@ void list_init(list_t* list);
 void list_add(list_t* list, void* data);
 void* list_get(list_t* list, size_t index);
 void list_rem(list_t* list, size_t index);
-void* list_find(list_t* list, void* data);
+ssize_t list_find(list_t* list, void* data);
 void list_free(list_t* list, list_data_free_t* free_fn);
 
 #endif

@@ -56,18 +56,18 @@ void list_rem(list_t* list, size_t index) {
 	list->index--;
 }
 
-void* list_find(list_t* list, void* data) {
+ssize_t list_find(list_t* list, void* data) {
 	if ( list->data == NULL ) {
-		return NULL;
+		return -1;
 	}
 
 	for ( size_t i = 0; i < list->index; i++ ) {
 		if ( list->data[i] == data ) {
-			return data;
+			return i;
 		}
 	}
 
-	return NULL;
+	return -1;
 }
 
 void list_free(list_t* list, list_data_free_t* free_fn) {

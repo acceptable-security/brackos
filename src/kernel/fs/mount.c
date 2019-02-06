@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <list.h>
+#include <kprint.h>
 
 mount_node_t root_node;
 
@@ -48,6 +49,7 @@ fs_t* mount_find(char* path, char* found_path, mount_node_t** curr) {
 	int dirty = 0;
 
 	do {
+		dirty = 0;
 		strcpy(&found_path[strlen(found_path)], (*curr)->path);
 
 		for ( size_t i = 0; i < (*curr)->children.index; i++ ) {

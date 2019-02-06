@@ -40,6 +40,10 @@ file_ref_t* file_ref_new(file_t* file, file_flags_t flags) {
 }
 
 file_ref_t* file_ref_resolve(task_t* task, fid_t fid) {
+	if ( fid == FID_INVALID ) {
+		return NULL;
+	}
+	
 	for ( size_t i = 0; i < current_task->files.pairs.index; i++ ) {
 		file_ref_pair_t* pair = (file_ref_pair_t*) current_task->files.pairs.data[i];
 
@@ -49,4 +53,20 @@ file_ref_t* file_ref_resolve(task_t* task, fid_t fid) {
 	}
 
 	return NULL;
+}
+
+void file_ref_close(file_ref_t* ref) {
+	// Release pair
+	for ( size_t i = 0; i < current_task->files.pairs.index; i++ ) {
+		file_ref_pair_t* pair = (file_ref_pair_t*) current_task->files.pairs.data[i];
+
+		if ( pair->fid == ref->fid ) {
+			list_rem(&ref->task->files.pairs, i);
+			kfree(pair);
+
+			break;
+		}
+	}
+
+	kfree(ref);
 }
