@@ -8,73 +8,11 @@
 #include <string.h>
 #include <math.h>
 
-static file_t* vfs_find(fs_t* fs, char* path, char* last_file, file_t** prev_file) {
-	file_t* file = (file_t*) fs->data;
-	file_t* found = NULL;
-	*prev_file = file;
-
-	while ( file != NULL && *path ) {
-		// Copy next file in path
-		char* tmp = last_file;
-
-		while ( *path && *path != '/' ) {
-			*tmp = *path;
-
-			tmp++;
-			path++;
-		}
-
-		if ( *path == '/' ) path++;
-		*tmp = 0;
-
-		// Find curr_file in file friends
-		file_t* search = file;
-
-		while ( search != NULL ) {
-			if ( strcmp(search->name, last_file) == 0 ) {
-				found = search;
-				break;
-			}
-
-			search = search->next;
-		}
-
-		if ( found != NULL ) {
-			if ( *path ) {
-				*prev_file = found;
-				file = found->child;
-				found = NULL;
-				continue;				
-			}
-			else {
-				return found;
-			}
-		}
-		else {
-			break;
-		}
-	}
-
-	// We reached the end, copy last path to end
-	if ( *path ) {
-		char* tmp = last_file;
-
-		while ( *path ) {
-			*tmp = *path;
-
-			tmp++;
-			path++;
-		}
-	}
-
-	return NULL;
-}
-
 file_ref_t* vfs_open(fs_t* fs, char* path, file_flags_t flags) {
 	char curr_file[MAXFILEPATH] = { 0 };
 
 	file_t* prev_file = NULL;
-	file_t* file = vfs_find(fs, path, curr_file, &prev_file);
+	file_t* file = file_resolve((file_t*) fs->data, path, curr_file, &prev_file);
 
 	if ( prev_file == NULL ) {
 		kprintf("vfs: critical error no file\n");
@@ -238,7 +176,7 @@ size_t vfs_list(fs_t* fs, char* path, file_ref_t** files) {
 	memset(curr_file, 0, MAXFILEPATH);
 
 	file_t* prev_file = NULL;
-	file_t* file = vfs_find(fs, path, curr_file, &prev_file);
+	file_t* file = file_resolve((file_t*) fs->data, path, curr_file, &prev_file);
 
 	if ( file == NULL ) {
 		/* TODO: report no file found */

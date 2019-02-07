@@ -71,9 +71,15 @@ void file_test() {
     quick_create("/test");
     quick_create("/asdf");
     quick_create("/test/test.txt");
+    quick_create("/test/asdf.txt");
+    quick_create("/asdf/test.txt");
+    quick_create("/asdf/asdf");
+    quick_create("/asdf/asdf/test.txt");
 
     quick_list("/");
     quick_list("/test");
+    quick_list("/asdf");
+    quick_list("/asdf/asdf");
 }
 
 void late_kernel_main() {

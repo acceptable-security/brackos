@@ -14,6 +14,7 @@
 #define O_RDWRT (O_RD | O_WRT)
 #define O_APD   (1 << 2)
 #define O_STAT  (1 << 3)
+#define O_LOCK  (1 << 4)
 
 // Reading flags
 #define RD_START -1
@@ -115,6 +116,7 @@ fs_t* fs_init(fs_op_t* op);
 
 // Private file functions
 file_t* file_alloc(char* name, fs_t* fs, void* data);
+file_t* file_resolve(file_t* file, char* path, char* last_file, file_t** prev_file);
 void file_add_friend(file_t* root, file_t* friend);
 void file_add_child(file_t* root, file_t* child);
 size_t file_count_friends(file_t* file);
