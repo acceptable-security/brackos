@@ -65,6 +65,7 @@ typedef struct {
     uint32_t edx;
     uint32_t ecx;
     uint32_t eax;
+    uint32_t error_code;
 } exc_regs_t;
 
 void idt_set_gate(unsigned int gate, uintptr_t address, uint16_t selector, uint8_t gate_type);

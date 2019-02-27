@@ -56,7 +56,7 @@ void rtl8139_interrupt(irq_regs_t* frame) {
 		kprintf("\n");
 
 		// Read data into net buffer
-		net_buf_read(g_dev->net_buf, data, header.len - 4);
+		ring_read(g_dev->ring, data, header.len - 4);
 	}
 	
 	if ( isr.tok == 1 ) {
@@ -154,9 +154,9 @@ void rtl8139_init_buffer(rtl8139_dev_t* dev) {
 		kprintf("rtl8139: tx buffer at %p (mapped at %p)\n", dev->tx_buff_phys[i], dev->tx_buff_virt[i]);
 	}
 
-	dev->net_buf = net_buf_init(RTL8139_RECV_BUFF);
+	dev->ring = ring_init(RTL8139_RECV_BUFF);
 
-	if ( !dev->net_buf ) {
+	if ( !dev->ring ) {
 		kprintf("rtl8139: failed to init netbuf\n");
 		return;
 	}

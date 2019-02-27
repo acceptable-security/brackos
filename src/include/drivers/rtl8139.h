@@ -1,6 +1,6 @@
 #include <arch/i386/irq.h>
 #include <kernel/pci.h>
-#include <net/net_buf.h>
+#include <net/ring.h>
 #include <stdint.h>
 
 // RTL8139 registers
@@ -47,7 +47,7 @@ typedef struct {
 	void* tx_buff_phys[4];
 	uint8_t curr_buff;
 
-	net_buf_t* net_buf;
+	ring_t* ring;
 
 	// Ethernet Information
 	uint8_t mac[6];
