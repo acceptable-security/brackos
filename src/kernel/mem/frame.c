@@ -165,6 +165,24 @@ void frame_status() {
     }
 }
 
+// Count free bytes
+size_t frame_free_count() {
+    size_t total = 0;
+
+    for ( int count = 0; count < MAX_FRAMES; count++ ) {
+        frame_node_t* head = buddy_alloc.free_lists[count];
+
+        if ( head != NULL ) {
+            while ( head != 0 ) {
+                total += PAGE_SIZE * count;
+                head = head->next;
+            }
+        }
+    }
+
+    return total;
+}
+
 // Given an chunk of memory's location and length, add it in chunks to the frame allocator.
 void frame_add_chunk(uintptr_t address, size_t size) {
     // If we don't have enough space for a single frame, ignore.

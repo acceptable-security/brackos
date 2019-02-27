@@ -42,7 +42,6 @@
 #include <string.h>
 
 extern void* page_table_base;
-extern uintptr_t our_gdt_phys;
 unsigned long kernel_base = 0xC0000000;
 
 void quick_create(char* path) {
@@ -90,6 +89,8 @@ void late_kernel_main() {
     vfs_init();             // Setup the file system
 
     file_test();
+
+    kprintf("free phys mem: %m\n", frame_free_count());
     for ( ;; ) {}
 }
 

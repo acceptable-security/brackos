@@ -28,3 +28,4 @@ void* frame_alloc(size_t size);
 void frame_dealloc(void* address, size_t size);
 void frame_add_free_item(uintptr_t address, size_t order, bool new_item);
 void frame_status();
+size_t frame_free_count();
