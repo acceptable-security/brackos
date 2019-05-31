@@ -20,6 +20,7 @@ void cpu_task_alloc(cpu_task_t* cpu_task) {
     }
 
     cpu_task->int_stack_top = cpu_task->int_stack_bottom + TASK_STACK_SIZE;
+    cpu_task->cr3 = page_directory_copy();
 
     memset((void*) cpu_task->int_stack_bottom, 0, TASK_STACK_SIZE);
 }
@@ -58,6 +59,9 @@ void cpu_task_kernel_init(cpu_task_t* cpu_task, uintptr_t address) {
 void cpu_task_schedule(cpu_task_t* cpu_task) {
     // Update tss
     tss_update(cpu_task->int_stack_top);
+
+    paging_load_directory(cpu_task->cr3);
+
     irq_send_eoi(0); // TODO: load IRQ from somewhere
 
     // Here it goes...

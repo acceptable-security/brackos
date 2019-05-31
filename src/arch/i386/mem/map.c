@@ -143,7 +143,6 @@ void* memmap(void* start, unsigned long length, unsigned long flags) {
 
                     return NULL;
                 }
-
             }
         }
 

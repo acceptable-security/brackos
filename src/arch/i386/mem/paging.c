@@ -1,4 +1,5 @@
 #include <arch/i386/paging.h>
+#include <mem/mmap.h>
 #include <kernel/spinlock.h>
 #include <kprint.h>
 #include <mem/frame.h>
@@ -41,15 +42,23 @@ void paging_print_page(uintptr_t dir) {
     }
 }
 
-void page_directory_copy(page_directory_t* dest, page_directory_t* src) {
-    spinlock_lock(page_lock);
+ page_directory_t* page_directory_copy() {
+    page_directory_t* src = page_directory_table;
+    page_directory_t* dest = (page_directory_t*) memmap(NULL, PAGE_SIZE, MMAP_RW | MMAP_URGENT);
+
+    if ( dest == NULL ) {
+        kprintf("paging: failed to alloc page dir");
+        return NULL;
+    }
 
     for ( int dir_ent = 0; dir_ent < 1023; dir_ent++ ) {
         if ( PAGE_TABLE_TEST(page_directory_table->tables[dir_ent], PAGE_PRESENT) ) {
-            page_table_t* dst_table = (page_table_t*) frame_alloc(1);
-            dest->tables[dir_ent] = PAGE_TABLE_FLAGS(dst_table, PAGE_GET_FLAGS(src->tables[dir_ent]));
+            page_table_t* dst_table = (page_table_t*) memmap(NULL, PAGE_SIZE, MMAP_RW | MMAP_URGENT);
+            uintptr_t dst_table_phys = paging_find_physical((uintptr_t) dst_table);
 
-            page_table_t* src_table = (page_table_t*) PAGE_NO_FLAGS(src->tables[dir_ent]);
+            dest->tables[dir_ent] = PAGE_TABLE_FLAGS(dst_table_phys, PAGE_GET_FLAGS(src->tables[dir_ent]));
+
+            page_table_t* src_table = (page_table_t*) (((uintptr_t) page_table_base) + (dir_ent * sizeof(page_table_t)));
 
             for ( int tab_ent = 0; tab_ent < 1024; tab_ent++ ) {
                 dst_table->entries[tab_ent] = src_table->entries[tab_ent];
@@ -60,7 +69,7 @@ void page_directory_copy(page_directory_t* dest, page_directory_t* src) {
         }
     }
 
-    spinlock_unlock(page_lock);
+    return dest;
 }
 
 void paging_print() {
@@ -211,5 +220,7 @@ uintptr_t paging_find_physical(uintptr_t virt) {
 }
 
 void paging_load_directory(page_directory_t* dir) {
-    __asm__ volatile("mov %%cr3, %%eax":"=a"(dir));
+    uintptr_t phys = paging_find_physical((uintptr_t) dir);
+    kprintf("paging: change dir (phys %p virt %p)\n", phys, dir);
+    __asm__ volatile("mov %%cr3, %%eax":"=a"(phys));
 }
