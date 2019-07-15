@@ -7,7 +7,8 @@
 
 typedef struct {
     uintptr_t esp;
-    page_directory_t* cr3;
+    page_directory_t* cr3_phys; // virt ptr w/ phys entries
+    page_directory_t* cr3_virt; // virt ptr w/ virt entries
 
     uintptr_t stack_bottom;
     uintptr_t stack_top;

@@ -33,7 +33,7 @@ bool paging_map(uintptr_t physical, uintptr_t virt, unsigned short flags);
 
 uintptr_t paging_find_physical(uintptr_t virt);
 
-page_directory_t* page_directory_copy();
+void page_directory_copy(page_directory_t** _phys, page_directory_t** _virt);
 void paging_load_directory(page_directory_t* dir);
 
 void paging_init(page_directory_t* initial_pd);

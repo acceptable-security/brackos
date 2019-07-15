@@ -81,21 +81,19 @@ void file_test() {
     quick_list("/asdf/asdf");
 }
 
-void run_tests() {
-    file_test();
-
-    kprintf("free phys mem: %m\n", frame_free_count());
-
-}
-
 void late_kernel_main() {
     kprintf("late main: Hello from late main!\n");
     vfs_init();             // Setup the file system
-    scheduler_add(task_kernel_create("askdfsa", (uintptr_t) run_tests));
 
     pci_init();             // Setup the PCI
     rtl8139_init();         // Setup the RTL8139 drivers
     ps2_init();             // Setup PS/2 drivers
+
+    file_test();
+
+    kprintf("free phys mem: %m\n", frame_free_count());
+
+    
 
     for ( ;; ) {}
 }

@@ -42,13 +42,14 @@ void paging_print_page(uintptr_t dir) {
     }
 }
 
- page_directory_t* page_directory_copy() {
+ void page_directory_copy(page_directory_t** _phys, page_directory_t** _virt) {
     page_directory_t* src = page_directory_table;
-    page_directory_t* dest = (page_directory_t*) memmap(NULL, PAGE_SIZE, MMAP_RW | MMAP_URGENT);
+    page_directory_t* phys = (page_directory_t*) memmap(NULL, PAGE_SIZE, MMAP_RW | MMAP_URGENT);
+    page_directory_t* virt = (page_directory_t*) memmap(NULL, PAGE_SIZE, MMAP_RW | MMAP_URGENT);
 
-    if ( dest == NULL ) {
+    if ( phys == NULL || virt == NULL ) {
         kprintf("paging: failed to alloc page dir");
-        return NULL;
+        return;
     }
 
     for ( int dir_ent = 0; dir_ent < 1023; dir_ent++ ) {
@@ -56,7 +57,8 @@ void paging_print_page(uintptr_t dir) {
             page_table_t* dst_table = (page_table_t*) memmap(NULL, PAGE_SIZE, MMAP_RW | MMAP_URGENT);
             uintptr_t dst_table_phys = paging_find_physical((uintptr_t) dst_table);
 
-            dest->tables[dir_ent] = PAGE_TABLE_FLAGS(dst_table_phys, PAGE_GET_FLAGS(src->tables[dir_ent]));
+            virt->tables[dir_ent] = PAGE_TABLE_FLAGS(dst_table, PAGE_GET_FLAGS(src->tables[dir_ent]));
+            phys->tables[dir_ent] = PAGE_TABLE_FLAGS(dst_table_phys, PAGE_GET_FLAGS(src->tables[dir_ent]));
 
             page_table_t* src_table = (page_table_t*) (((uintptr_t) page_table_base) + (dir_ent * sizeof(page_table_t)));
 
@@ -65,11 +67,13 @@ void paging_print_page(uintptr_t dir) {
             }
         }
         else {
-            dest->tables[dir_ent] = PAGE_TABLE_FLAGS(NULL, PAGE_GET_FLAGS(src->tables[dir_ent]));
+            virt->tables[dir_ent] = PAGE_TABLE_FLAGS(NULL, PAGE_GET_FLAGS(src->tables[dir_ent]));
+            phys->tables[dir_ent] = PAGE_TABLE_FLAGS(NULL, PAGE_GET_FLAGS(src->tables[dir_ent]));
         }
     }
 
-    return dest;
+    *_phys = phys;
+    *_virt = virt;
 }
 
 void paging_print() {
@@ -221,6 +225,5 @@ uintptr_t paging_find_physical(uintptr_t virt) {
 
 void paging_load_directory(page_directory_t* dir) {
     uintptr_t phys = paging_find_physical((uintptr_t) dir);
-    kprintf("paging: change dir (phys %p virt %p)\n", phys, dir);
     __asm__ volatile("mov %%cr3, %%eax":"=a"(phys));
 }
